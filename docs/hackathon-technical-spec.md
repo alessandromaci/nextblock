@@ -164,7 +164,7 @@ frontend/
         YieldTicker.tsx
         BufferVisualization.tsx
       deposit/
-        DepositModal.tsx
+        DepositSidebar.tsx
         WithdrawTab.tsx
         AmountInput.tsx
         ShareCalculation.tsx
@@ -655,7 +655,7 @@ EVALUATE        Vault Detail (/vault/[addr])     vault.getVaultInfo()           
                                                  vault.getVaultPolicy(id) per policy
                                                  registry.getPolicy(id) per policy
 
-DEPOSIT         DepositModal                     Step 1: USDC.approve(vault, amount)   allowance set
+DEPOSIT         DepositSidebar                     Step 1: USDC.approve(vault, amount)   allowance set
                 State: IDLE->APPROVING->         Step 2: vault.deposit(amount, user)   shares minted
                 APPROVED->DEPOSITING->SUCCESS                                          totalDeployedCapital ↑
                 ShareCalculation component       Read: vault.previewDeposit(amount)
@@ -663,7 +663,7 @@ DEPOSIT         DepositModal                     Step 1: USDC.approve(vault, amo
 EARN            Vault Detail (auto-refresh)      vault.totalAssets() polled 10s        (observe NAV ↑)
 (observe)       YieldTicker                      Client-side interpolation 1s          premiums earn linearly
 
-WITHDRAW        DepositModal (Withdraw tab)      vault.maxWithdraw(user)               shares burned
+WITHDRAW        DepositSidebar (Withdraw tab)      vault.maxWithdraw(user)               shares burned
                 AmountInput capped at buffer     vault.withdraw(amt, user, user)       USDC transferred
 ```
 
@@ -1134,8 +1134,8 @@ InsuranceVault ──reads──> PolicyRegistry
 |------|--------|---------------|-------------------|
 | **Discovery** | (view) | -- | `factory.getVaults()`, `vault.getVaultInfo()` x2 |
 | **Detail** | (view) | -- | `getVaultInfo()`, `getPolicyIds()`, `getVaultPolicy(id)` x N |
-| **Modal** | Deposit | `USDC.approve` + `vault.deposit` | `balanceOf`, `getVaultInfo()` |
-| **Modal** | Withdraw | `vault.withdraw` | `balanceOf`, `USDC.balanceOf`, `getVaultInfo()` |
+| **Sidebar** | Deposit | `USDC.approve` + `vault.deposit` | `balanceOf`, `getVaultInfo()` |
+| **Sidebar** | Withdraw | `vault.withdraw` | `balanceOf`, `USDC.balanceOf`, `getVaultInfo()` |
 | **Admin** | Advance Time | `registry.advanceTime(sec)` | `currentTime()`, all vault info |
 | **Admin** | Set Oracle | `oracle.setBtcPrice` / `setFlightStatus` | oracle reads |
 | **Admin** | Check Claim | `vault.checkClaim(id)` | `getVaultInfo()`, `getVaultPolicy(id)` |
@@ -1210,27 +1210,26 @@ VaultDetailPage
   |     +-- ProjectedAPY
   |     +-- EarnedPremiums (cumulative)
   +-- UserPosition (shares owned, current value, P&L)
-  +-- DepositButton / WithdrawButton -> opens modal
+  +-- DepositSidebar (inline, right side, Morpho-style)
+  |     +-- TabSelector (Deposit / Withdraw)
+  |     +-- AmountInput
+  |     |     +-- BalanceDisplay (USDC balance or vault shares)
+  |     |     +-- MaxButton
+  |     +-- ShareCalculation
+  |     |     +-- "You will receive: X shares" (deposit)
+  |     |     +-- "You will receive: X USDC" (withdraw)
+  |     |     +-- "Exchange rate: 1 share = X USDC"
+  |     +-- ActionButton
+  |     |     +-- State machine: IDLE -> APPROVING -> APPROVED -> DEPOSITING -> SUCCESS/ERROR
+  |     +-- ConfirmationView (post-success)
+  |           +-- "Your $X is backing N policies"
 ```
 
 **Contract reads**: `totalAssets()`, `totalSupply()`, `policies(i)`, per policy: `registry.getPolicy(id)`, `balanceOf(user)`, `maxWithdraw(user)`, `registry.currentTime()`.
 
-#### Modal: Deposit/Withdraw
-```
-DepositModal
-  +-- TabSelector (Deposit / Withdraw)
-  +-- AmountInput
-  |     +-- BalanceDisplay (USDC balance or vault shares)
-  |     +-- MaxButton
-  +-- ShareCalculation
-  |     +-- "You will receive: X shares" (deposit)
-  |     +-- "You will receive: X USDC" (withdraw)
-  |     +-- "Exchange rate: 1 share = X USDC"
-  +-- ActionButton
-  |     +-- State machine: IDLE -> APPROVING -> APPROVED -> DEPOSITING -> SUCCESS/ERROR
-  +-- ConfirmationView (post-success)
-        +-- "Your $X is backing N policies"
-```
+#### Inline Sidebar: Deposit/Withdraw (Morpho-style)
+
+The deposit/withdraw UI is an **inline sidebar** on the Vault Detail page (right side), not a modal. This follows the Morpho Finance pattern: vault details on the left, action panel fixed on the right. The sidebar is always visible when viewing a vault. Light theme.
 
 **Deposit state machine**:
 ```

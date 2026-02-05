@@ -1042,7 +1042,7 @@ Demo presenter switches to Admin page:
             two different strategies, same policy marketplace. One trusts all
             verification types. The other only trusts automated claims."
 
-1:00-2:00  Screen 2+Modal: "Maria, a family office CIO, picks Vault A. She deposits
+1:00-2:00  Screen 2+Sidebar: "Maria, a family office CIO, picks Vault A. She deposits
             $10K. Her capital backs 3 insurance policies -- on-chain crypto protection,
             oracle-verified flight delay, and traditional fire insurance. 80% deployed,
             20% liquidity buffer."
@@ -1234,13 +1234,13 @@ P1 (BTC Protection) is in BOTH vaults -- this is the shared policy that proves t
 | VaultFactory | Deploys new InsuranceVault instances. Sets vault manager, buffer ratio, fee rate. |
 | ClaimReceipt | Soulbound ERC-721 token minted to insurers on claim trigger. Non-transferable. Receipt struct includes `insurer` field. Represents right to withdraw claim amount from vault. |
 
-### The 3 Frontend Pages + 1 Modal
+### The 3 Frontend Pages + Inline Sidebar
 
 1. **Vault Discovery** -- Two vault cards side by side. Name, manager, APY, risk level, TVL, policy count, verification types. First impression.
-2. **Vault Detail** -- Policy breakdown with verification type labels, allocations, premium rates, expiry bars, deployment ratio (80/20), fee structure, yield accrual. The "I can see exactly what my money backs" moment. Triggers deposit/withdraw modal.
+2. **Vault Detail** -- Policy breakdown with verification type labels, allocations, premium rates, expiry bars, deployment ratio (80/20), fee structure, yield accrual. The "I can see exactly what my money backs" moment. **Inline deposit/withdraw sidebar** on the right side (Morpho-style), always visible.
 3. **Admin / Curator** -- Combined page. Section 1: vault management (create vault, select policies, set allocations). Section 2: simulation controls (time warp, 3 different claim triggers, reset). Policies shown as available pool.
 
-**Modal**: Deposit/Withdraw -- enter amount, see share calculation, confirm, post-deposit summary.
+**Inline Sidebar** (on Vault Detail): Deposit/Withdraw tabs -- enter amount, see share calculation, confirm, post-deposit summary. Always visible on the right side of the page, not a modal overlay. Light theme.
 
 ### Must Build (Core Demo)
 
