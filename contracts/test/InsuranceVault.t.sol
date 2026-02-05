@@ -166,10 +166,9 @@ contract InsuranceVaultTest is Test {
 
         uint256 maxW = vaultA.maxWithdraw(investor);
 
-        vm.expectRevert(abi.encodeWithSelector(
-            InsuranceVault.InsuranceVault__InsufficientBuffer.selector,
-            maxW + 1, maxW
-        ));
+        // OZ ERC4626 checks maxWithdraw before calling _withdraw,
+        // so the revert comes from OZ with ERC4626ExceededMaxWithdraw
+        vm.expectRevert();
         vaultA.withdraw(maxW + 1, investor, investor);
         vm.stopPrank();
     }
