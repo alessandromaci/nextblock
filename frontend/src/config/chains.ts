@@ -1,5 +1,7 @@
 import { defineChain } from 'viem';
-import { baseSepolia } from 'viem/chains';
+import { baseSepolia as baseSepoliaChain } from 'viem/chains';
+
+export const baseSepolia = baseSepoliaChain;
 
 /**
  * Local Anvil chain for development.
@@ -19,7 +21,7 @@ export const anvil = defineChain({
  * Supported chains for the app.
  * Anvil first for local dev, Base Sepolia for testnet deployment.
  */
-export const supportedChains = [anvil, baseSepolia] as const;
+export const supportedChains = [anvil, baseSepoliaChain] as const;
 
 /**
  * Default chain used when no wallet is connected.
