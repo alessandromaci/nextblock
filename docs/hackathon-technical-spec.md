@@ -99,7 +99,7 @@ Two wallets: Wallet 1 = admin + vault managers + oracle reporter + insurer (all 
 |-----------|---------|-------|
 | **Solidity** | 0.8.24+ | Stable, well-audited compiler version |
 | **Foundry** | Latest | forge (build/test), anvil (local chain), cast (CLI interactions) |
-| **OpenZeppelin** | v5.1.0 | ERC4626, ERC721, ERC20, Ownable, ReentrancyGuard |
+| **OpenZeppelin** | v5.5.0 | ERC4626, ERC721, ERC20, Ownable, ReentrancyGuard |
 | **forge-std** | Latest | Test utilities, console.log, vm cheatcodes |
 
 **Project structure**:
@@ -112,11 +112,6 @@ contracts/
     InsuranceVault.sol
     VaultFactory.sol
     ClaimReceipt.sol
-    interfaces/
-      IMockOracle.sol
-      IPolicyRegistry.sol
-      IClaimReceipt.sol
-      IInsuranceVault.sol
   test/
     MockUSDC.t.sol
     MockOracle.t.sol
@@ -125,10 +120,9 @@ contracts/
     InsuranceVault.t.sol
     VaultFactory.t.sol
     integration/
-      FullLifecycle.t.sol
+      FullFlow.t.sol
   script/
-    Deploy.s.sol
-    Seed.s.sol
+    DemoSetup.s.sol
   foundry.toml
 ```
 
@@ -136,7 +130,8 @@ contracts/
 
 | Component | Version | Notes |
 |-----------|---------|-------|
-| **Next.js** | 15 (App Router) | Server components for static content, client for wallet interaction |
+| **Next.js** | 16.1.6 (App Router) | Server components for static content, client for wallet interaction |
+| **React** | 19.2.3 | Latest stable |
 | **wagmi** | v2 | React hooks for Ethereum: useReadContract, useWriteContract, useAccount |
 | **viem** | v2 | Low-level Ethereum client, used by wagmi internally |
 | **RainbowKit** | v2 | Wallet connection modal (MetaMask, WalletConnect) |
@@ -149,7 +144,7 @@ contracts/
 frontend/
   src/
     app/
-      layout.tsx          # Providers, wallet config
+      layout.tsx          # Root layout, imports Providers
       page.tsx            # Vault Discovery (home)
       vault/
         [address]/
@@ -165,7 +160,6 @@ frontend/
         BufferVisualization.tsx
       deposit/
         DepositSidebar.tsx
-        WithdrawTab.tsx
         AmountInput.tsx
         ShareCalculation.tsx
       admin/
@@ -175,30 +169,31 @@ frontend/
         ClaimReceipts.tsx
         DemoControls.tsx
         PolicyPool.tsx
-        VaultCreator.tsx
       shared/
         VerificationBadge.tsx
         StatusBadge.tsx
         WalletRoleIndicator.tsx
         Header.tsx
         WalletButton.tsx
+        Providers.tsx
     hooks/
-      useVaultData.ts       # Aggregates vault reads via multicall
+      useVaultData.ts       # Aggregates vault reads via multicall + USDC helpers
       useVaultPolicies.ts   # Reads policy data for a vault
-      usePolicyRegistry.ts  # Reads global policy data
+      usePolicyRegistry.ts  # Reads global policy data + time
       useDepositFlow.ts     # Approve + deposit state machine
       useWithdrawFlow.ts    # Withdraw state machine (maxWithdraw pre-check)
       useClaimTrigger.ts    # Write hooks for 3 claim paths
-      useClaimReceipts.ts   # Read receipts by iterating 0..nextReceiptId, filter by insurer
-      useTimeControls.ts    # Admin time advancement
+      useClaimReceipts.ts   # Read receipts by iterating 0..nextReceiptId
+      useTimeControls.ts    # Admin: time, oracle, and USDC mint controls
     config/
       contracts.ts          # ABIs + deployed addresses
       chains.ts             # Chain config (Anvil / Base Sepolia)
-      constants.ts          # Formatting, decimals
+      constants.ts          # Formatting, decimals, verification config
+      wagmi.ts              # wagmi + RainbowKit configuration
     lib/
-      formatting.ts         # formatUSDC, formatSharePrice, formatAPY, formatDaysRemaining
+      formatting.ts         # formatUSDC, formatSharePrice, formatAPY, + helpers
   public/
-  tailwind.config.ts
+  postcss.config.mjs
   next.config.ts
   tsconfig.json
   package.json
@@ -214,7 +209,7 @@ frontend/
 | **Active** status | Green | Policy active |
 | **Claimed** status | Red | Policy claimed |
 | **Expired** status | Gray | Policy expired |
-| **Font** | Inter / system | Monospace for numbers |
+| **Font** | System font stack | Monospace for numbers (Inter not imported due to DNS restrictions) |
 
 ---
 
@@ -267,6 +262,9 @@ contract MockOracle is Ownable {
 }
 ```
 
+**Custom errors**: `MockOracle__InvalidPrice()`
+**Events**: `BtcPriceUpdated(int256 price)`, `FlightStatusUpdated(bool delayed)`
+
 #### PolicyRegistry
 ```solidity
 contract PolicyRegistry is Ownable {
@@ -303,6 +301,11 @@ contract PolicyRegistry is Ownable {
 }
 ```
 
+**Custom errors**: `PolicyRegistry__PolicyNotFound(uint256 policyId)`, `PolicyRegistry__InvalidStatus(uint256 policyId)`, `PolicyRegistry__InvalidParams()`
+**Events**: `PolicyRegistered(uint256 indexed policyId, string name)`, `PolicyActivated(uint256 indexed policyId, uint256 startTime)`, `TimeAdvanced(uint256 newTimestamp, uint256 secondsAdded)`
+
+Note: Policy IDs start from 0 (first registered policy has ID 0). `getPolicyCount()` returns `nextPolicyId`.
+
 #### InsuranceVault (the critical contract)
 ```solidity
 contract InsuranceVault is ERC4626, Ownable, ReentrancyGuard {
@@ -318,6 +321,7 @@ contract InsuranceVault is ERC4626, Ownable, ReentrancyGuard {
     // State
     uint256[] public policyIds;
     mapping(uint256 => VaultPolicy) public vaultPolicies;
+    mapping(uint256 => bool) public policyAdded;  // tracks which policies are in this vault
     uint256 public totalAllocationWeight; // Must equal 10000 when finalized
     uint256 public totalPendingClaims;
     uint256 public totalDeployedCapital;  // Accounting-only
@@ -327,10 +331,13 @@ contract InsuranceVault is ERC4626, Ownable, ReentrancyGuard {
     uint256 public lastFeeTimestamp;
     string public vaultName;
     address public vaultManager;
+    address public oracleReporter;        // oracle reporter role
+    address public insurerAdmin;          // insurer admin role
 
     // References
     PolicyRegistry public registry;
     ClaimReceipt public claimReceipt;
+    MockOracle public oracle;             // oracle reference
 
     // Core ERC4626 overrides (5 functions)
     function totalAssets() public view override returns (uint256);     // Custom NAV formula
@@ -368,6 +375,8 @@ contract InsuranceVault is ERC4626, Ownable, ReentrancyGuard {
     function _availableBuffer() internal view returns (uint256);
     function _accrueFeesInternal() internal;
     function _checkExpiredPolicies() internal;  // Modifier on state-changing functions ONLY (not view functions)
+    function _earnedPremiumFor(uint256 policyId, VaultPolicy memory vp) internal view returns (uint256);
+    function _validateClaimPreconditions(uint256 policyId) internal view returns (VaultPolicy storage);
 
     // Frontend view helpers (aggregated getters to reduce RPC calls)
     function getVaultInfo() external view returns (
@@ -389,12 +398,17 @@ contract InsuranceVault is ERC4626, Ownable, ReentrancyGuard {
 **Custom errors** (gas-efficient, replaces require strings):
 ```solidity
 error InsuranceVault__PolicyNotActive(uint256 policyId);
+error InsuranceVault__PolicyAlreadyAdded(uint256 policyId);
+error InsuranceVault__PolicyNotInVault(uint256 policyId);
 error InsuranceVault__PolicyAlreadyClaimed(uint256 policyId);
 error InsuranceVault__InsufficientBuffer(uint256 requested, uint256 available);
 error InsuranceVault__UnauthorizedCaller(address caller);
 error InsuranceVault__InvalidClaimAmount(uint256 amount, uint256 maxAllowed);
-error ClaimReceipt__UnauthorizedMinter(address caller);
-error ClaimReceipt__AlreadyExercised(uint256 receiptId);
+error InsuranceVault__WrongVerificationType(uint256 policyId);
+error InsuranceVault__OracleConditionNotMet(uint256 policyId);
+error InsuranceVault__InvalidReceipt(uint256 receiptId);
+error InsuranceVault__InvalidParams();
+error InsuranceVault__NoFeesToClaim();
 error InsuranceVault__ClaimShortfall(uint256 receiptId, uint256 claimAmount, uint256 payout);
 ```
 
@@ -405,7 +419,7 @@ contract VaultFactory is Ownable {
     address public immutable asset;           // MockUSDC
     address public immutable policyRegistry;
     address public immutable oracle;
-    address public immutable claimReceipt;
+    address public immutable claimReceiptAddr;
 
     address[] public deployedVaults;
     mapping(address => bool) public isVault;
@@ -430,7 +444,7 @@ contract VaultFactory is Ownable {
 
 #### ClaimReceipt
 ```solidity
-contract ClaimReceipt is ERC721 {
+contract ClaimReceipt is ERC721, Ownable {
     struct Receipt {
         uint256 policyId;
         uint256 claimAmount;
@@ -459,6 +473,14 @@ contract ClaimReceipt is ERC721 {
     function getReceipt(uint256 receiptId) external view returns (Receipt memory);
 }
 ```
+
+**Token name/symbol**: `"NextBlock Claim Receipt"` / `"NXBCR"`
+
+**Authorization**: `mapping(address => bool) public authorizedMinters` -- maintained by owner via `setAuthorizedMinter(address, bool)`.
+
+**Custom errors**: `ClaimReceipt__UnauthorizedMinter(address caller)`, `ClaimReceipt__NonTransferable()`, `ClaimReceipt__AlreadyExercised(uint256 receiptId)`, `ClaimReceipt__ReceiptNotFound(uint256 receiptId)`, `ClaimReceipt__OnlyIssuingVault(uint256 receiptId, address caller, address vault)`
+
+**Events**: `MinterUpdated(address indexed minter, bool authorized)`, `ReceiptMinted(uint256 indexed receiptId, address indexed insurer, uint256 policyId, uint256 claimAmount, address vault)`, `ReceiptExercised(uint256 indexed receiptId)`
 
 ### 4.3 Key Implementation Details
 
@@ -589,6 +611,33 @@ Phase 5: Setup demo state
   23. Investor deposits into Vault A and Vault B
 ```
 
+### 4.5 Key Solidity Events
+
+```
+// InsuranceVault events:
+event PolicyAdded(uint256 indexed policyId, uint256 allocationWeight);
+event PremiumDeposited(uint256 indexed policyId, uint256 amount);
+event ClaimTriggered(uint256 indexed policyId, uint256 amount, address insurer, uint256 receiptId);
+event ClaimExercised(uint256 indexed receiptId, uint256 amount, address insurer);
+event ClaimShortfall(uint256 indexed receiptId, uint256 claimAmount, uint256 actualPayout);
+event PolicyExpired(uint256 indexed policyId);
+event FeesCollected(address indexed recipient, uint256 amount);
+event OracleReporterUpdated(address indexed reporter);
+event InsurerAdminUpdated(address indexed admin);
+
+// PolicyRegistry events:
+event PolicyRegistered(uint256 indexed policyId, string name);
+event PolicyActivated(uint256 indexed policyId, uint256 startTime);
+event TimeAdvanced(uint256 newTimestamp, uint256 secondsAdded);
+
+// ClaimReceipt events:
+event MinterUpdated(address indexed minter, bool authorized);
+event ReceiptMinted(uint256 indexed receiptId, address indexed insurer, uint256 policyId, uint256 claimAmount, address vault);
+event ReceiptExercised(uint256 indexed receiptId);
+
+// Note: ERC-4626 standard Deposit/Withdraw events are emitted by OpenZeppelin, not custom events.
+```
+
 ---
 
 ## 5. Entity Interaction Flows
@@ -631,7 +680,6 @@ InsuranceVault          |       |           |            |         |          |
   submitClaim (P3)      |       |           |            |    X    |          |
   exerciseClaim         |       |           |            |    X    |          |
   deposit / withdraw    |   X   |     X     |     X      |    X    |    X     |   X
-  resetDemo             |   X   |           |            |         |          |
 ------------------------+-------+-----------+------------+---------+----------+--------
 ClaimReceipt            |       |           |            |         |          |
   mint / markExercised  | (only callable by authorized InsuranceVault contracts)  |
@@ -1142,7 +1190,7 @@ InsuranceVault ──reads──> PolicyRegistry
 | **Admin** | Report Event | `vault.reportEvent(id)` | same |
 | **Admin** | Submit Claim | `vault.submitClaim(id, amt)` | same |
 | **Admin** | Exercise | `vault.exerciseClaim(receiptId)` | `getVaultInfo()`, `USDC.balanceOf` |
-| **Admin** | Reset | Re-deploy via `DemoSetup.s.sol` | full refresh (new contract addresses) |
+| **Admin** | Reset | Re-deploy via `DemoSetup.s.sol` (no `resetDemo` contract function -- full redeployment only) | full refresh (new contract addresses) |
 
 ### 5.15 Demo Transaction Log (5-minute run)
 
@@ -1185,9 +1233,10 @@ VaultDiscoveryPage
   |     |     +-- RiskLevel indicator
   |     +-- VaultCard (Vault B)
   |           +-- (same structure)
-  +-- UserPositions (if wallet connected)
-        +-- PositionRow (vault name, shares, value, P&L)
+  +-- HowItWorks section (3-step explainer)
 ```
+
+Note: `UserPositions` component was removed. The page shows vault cards and a "How It Works" section.
 
 **Contract reads**: `VaultFactory.getVaults()` (returns full address array), per vault: `vault.getVaultInfo()`, `balanceOf(user)`.
 
@@ -1263,12 +1312,14 @@ AdminPage
   |
   +-- Section: Policy Pool (read-only display of all registered policies)
   |
-  +-- Section: Vault Management (optional -- Create Vault flow)
+  +-- Section: Vault Overview (compact read-only display -- VaultCreator.tsx deferred)
   |
   +-- Section: Demo Controls
         +-- [Reset Demo] button
         +-- [Mint USDC] button (to investor address)
 ```
+
+Note: `WithdrawTab.tsx` does not exist as a separate component -- withdraw is integrated into `DepositSidebar.tsx` via tab switching.
 
 ### 6.2 wagmi Hooks Strategy
 
@@ -1285,11 +1336,24 @@ AdminPage
 
 ```typescript
 // lib/formatting.ts
-formatUSDC(amount: bigint): string        // 1000000n -> "$1.00"
+formatUSDC(amount: bigint): string               // 1000000n -> "$1.00"
+formatUSDCCompact(amount: bigint): string         // 50000000000n -> "$50K"
+formatUSDCRaw(amount: bigint): string             // 1000000n -> "1.00" (no $)
 formatSharePrice(assets: bigint, shares: bigint): string  // -> "$1.0199"
-formatAPY(rate: number): string           // 0.0812 -> "8.12%"
+getSharePriceNumber(totalAssets: bigint, totalSupply: bigint): number // -> 1.0199
+formatAPY(rate: number): string                   // 0.0812 -> "8.12%"
+formatFeeBps(feeBps: bigint): string              // 50n -> "0.50%"
 formatDaysRemaining(expiry: bigint, now: bigint): string  // -> "45 days"
-formatVerificationType(type: number): string  // 0 -> "On-chain"
+formatDuration(seconds: bigint): string           // -> "90 days"
+formatBufferRatio(bufferBps: bigint): string      // -> "20%"
+formatAllocationWeight(weightBps: bigint): string // -> "40%"
+formatBtcPrice(price: bigint): string             // -> "$85,000"
+shortenAddress(address: string): string           // -> "0x1234...5678"
+parseUSDC(amount: string): bigint                 // "1000" -> 1000000000n
+calculatePolicyProgress(startTime: bigint, duration: bigint, currentTime: bigint): number
+
+// config/constants.ts
+VERIFICATION_CONFIG                               // Maps verification type enum to label, color, description
 ```
 
 ---

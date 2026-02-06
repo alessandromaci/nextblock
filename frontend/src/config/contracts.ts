@@ -1,479 +1,3577 @@
 // =============================================================================
-// Contract ABIs -- Placeholder definitions matching the contract interfaces.
-// Replace with real ABIs from Foundry `out/` directory after contract build.
+// Contract ABIs and addresses -- Generated from Foundry build output.
+// Source: repo/contracts/out/ (forge build artifacts)
+// DO NOT EDIT MANUALLY. Re-generate after contract changes.
 // =============================================================================
 
 export const VAULT_FACTORY_ABI = [
   {
-    type: 'function',
-    name: 'getVaults',
-    inputs: [],
-    outputs: [{ name: '', type: 'address[]' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'getVaultCount',
-    inputs: [],
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'isVault',
-    inputs: [{ name: 'vault', type: 'address' }],
-    outputs: [{ name: '', type: 'bool' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'createVault',
-    inputs: [
-      { name: 'name', type: 'string' },
-      { name: 'symbol', type: 'string' },
-      { name: 'vaultName', type: 'string' },
-      { name: 'vaultManager', type: 'address' },
-      { name: 'bufferRatioBps', type: 'uint256' },
-      { name: 'managementFeeBps', type: 'uint256' },
+    "type": "constructor",
+    "inputs": [
+      {
+        "name": "asset_",
+        "type": "address"
+      },
+      {
+        "name": "policyRegistry_",
+        "type": "address"
+      },
+      {
+        "name": "oracle_",
+        "type": "address"
+      },
+      {
+        "name": "claimReceipt_",
+        "type": "address"
+      }
     ],
-    outputs: [{ name: 'vault', type: 'address' }],
-    stateMutability: 'nonpayable',
+    "stateMutability": "nonpayable"
   },
+  {
+    "type": "function",
+    "name": "asset",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "claimReceiptAddr",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "createVault",
+    "inputs": [
+      {
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "name": "symbol",
+        "type": "string"
+      },
+      {
+        "name": "vaultName",
+        "type": "string"
+      },
+      {
+        "name": "vaultManager_",
+        "type": "address"
+      },
+      {
+        "name": "bufferRatioBps_",
+        "type": "uint256"
+      },
+      {
+        "name": "managementFeeBps_",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "vault",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "deployedVaults",
+    "inputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getVaultCount",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getVaults",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address[]"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "isVault",
+    "inputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "oracle",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "owner",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "policyRegistry",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "renounceOwnership",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "transferOwnership",
+    "inputs": [
+      {
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "event",
+    "name": "OwnershipTransferred",
+    "inputs": [
+      {
+        "name": "previousOwner",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "name": "newOwner",
+        "type": "address",
+        "indexed": true
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "VaultCreated",
+    "inputs": [
+      {
+        "name": "vault",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "indexed": false
+      },
+      {
+        "name": "symbol",
+        "type": "string",
+        "indexed": false
+      },
+      {
+        "name": "vaultName",
+        "type": "string",
+        "indexed": false
+      },
+      {
+        "name": "vaultManager",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "name": "bufferRatioBps",
+        "type": "uint256",
+        "indexed": false
+      },
+      {
+        "name": "managementFeeBps",
+        "type": "uint256",
+        "indexed": false
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "error",
+    "name": "OwnableInvalidOwner",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "OwnableUnauthorizedAccount",
+    "inputs": [
+      {
+        "name": "account",
+        "type": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "VaultFactory__InvalidParams",
+    "inputs": []
+  }
 ] as const;
 
 export const INSURANCE_VAULT_ABI = [
-  // ---- ERC-4626 standard views ----
   {
-    type: 'function',
-    name: 'totalAssets',
-    inputs: [],
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'totalSupply',
-    inputs: [],
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'balanceOf',
-    inputs: [{ name: 'account', type: 'address' }],
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'maxWithdraw',
-    inputs: [{ name: 'owner', type: 'address' }],
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'maxRedeem',
-    inputs: [{ name: 'owner', type: 'address' }],
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'previewDeposit',
-    inputs: [{ name: 'assets', type: 'uint256' }],
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'previewWithdraw',
-    inputs: [{ name: 'assets', type: 'uint256' }],
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'convertToShares',
-    inputs: [{ name: 'assets', type: 'uint256' }],
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'convertToAssets',
-    inputs: [{ name: 'shares', type: 'uint256' }],
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'asset',
-    inputs: [],
-    outputs: [{ name: '', type: 'address' }],
-    stateMutability: 'view',
-  },
-  // ---- Custom vault views ----
-  {
-    type: 'function',
-    name: 'getVaultInfo',
-    inputs: [],
-    outputs: [
-      { name: 'name', type: 'string' },
-      { name: 'manager', type: 'address' },
-      { name: 'assets', type: 'uint256' },
-      { name: 'shares', type: 'uint256' },
-      { name: 'sharePrice', type: 'uint256' },
-      { name: 'bufferBps', type: 'uint256' },
-      { name: 'feeBps', type: 'uint256' },
-      { name: 'availableBuffer', type: 'uint256' },
-      { name: 'deployedCapital', type: 'uint256' },
-      { name: 'policyCount', type: 'uint256' },
+    "type": "constructor",
+    "inputs": [
+      {
+        "name": "asset_",
+        "type": "address"
+      },
+      {
+        "name": "name_",
+        "type": "string"
+      },
+      {
+        "name": "symbol_",
+        "type": "string"
+      },
+      {
+        "name": "vaultName_",
+        "type": "string"
+      },
+      {
+        "name": "owner_",
+        "type": "address"
+      },
+      {
+        "name": "vaultManager_",
+        "type": "address"
+      },
+      {
+        "name": "bufferRatioBps_",
+        "type": "uint256"
+      },
+      {
+        "name": "managementFeeBps_",
+        "type": "uint256"
+      },
+      {
+        "name": "registry_",
+        "type": "address"
+      },
+      {
+        "name": "oracle_",
+        "type": "address"
+      },
+      {
+        "name": "claimReceipt_",
+        "type": "address"
+      }
     ],
-    stateMutability: 'view',
+    "stateMutability": "nonpayable"
   },
   {
-    type: 'function',
-    name: 'getPolicyIds',
-    inputs: [],
-    outputs: [{ name: '', type: 'uint256[]' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'getVaultPolicy',
-    inputs: [{ name: 'policyId', type: 'uint256' }],
-    outputs: [
-      { name: 'allocationWeight', type: 'uint256' },
-      { name: 'premium', type: 'uint256' },
-      { name: 'earnedPremium', type: 'uint256' },
-      { name: 'coverage', type: 'uint256' },
-      { name: 'duration', type: 'uint256' },
-      { name: 'startTime', type: 'uint256' },
-      { name: 'timeRemaining', type: 'uint256' },
-      { name: 'claimed', type: 'bool' },
-      { name: 'expired', type: 'bool' },
+    "type": "function",
+    "name": "BASIS_POINTS",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
     ],
-    stateMutability: 'view',
+    "stateMutability": "view"
   },
   {
-    type: 'function',
-    name: 'vaultName',
-    inputs: [],
-    outputs: [{ name: '', type: 'string' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'vaultManager',
-    inputs: [],
-    outputs: [{ name: '', type: 'address' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'bufferRatioBps',
-    inputs: [],
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'managementFeeBps',
-    inputs: [],
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'totalPendingClaims',
-    inputs: [],
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'totalDeployedCapital',
-    inputs: [],
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  // ---- ERC-4626 writes ----
-  {
-    type: 'function',
-    name: 'deposit',
-    inputs: [
-      { name: 'assets', type: 'uint256' },
-      { name: 'receiver', type: 'address' },
+    "type": "function",
+    "name": "SECONDS_PER_YEAR",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
     ],
-    outputs: [{ name: 'shares', type: 'uint256' }],
-    stateMutability: 'nonpayable',
+    "stateMutability": "view"
   },
   {
-    type: 'function',
-    name: 'withdraw',
-    inputs: [
-      { name: 'assets', type: 'uint256' },
-      { name: 'receiver', type: 'address' },
-      { name: 'owner', type: 'address' },
+    "type": "function",
+    "name": "accumulatedFees",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
     ],
-    outputs: [{ name: 'shares', type: 'uint256' }],
-    stateMutability: 'nonpayable',
-  },
-  // ---- Claim triggers ----
-  {
-    type: 'function',
-    name: 'checkClaim',
-    inputs: [{ name: 'policyId', type: 'uint256' }],
-    outputs: [{ name: 'receiptId', type: 'uint256' }],
-    stateMutability: 'nonpayable',
+    "stateMutability": "view"
   },
   {
-    type: 'function',
-    name: 'reportEvent',
-    inputs: [{ name: 'policyId', type: 'uint256' }],
-    outputs: [{ name: 'receiptId', type: 'uint256' }],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    name: 'submitClaim',
-    inputs: [
-      { name: 'policyId', type: 'uint256' },
-      { name: 'amount', type: 'uint256' },
+    "type": "function",
+    "name": "addPolicy",
+    "inputs": [
+      {
+        "name": "policyId",
+        "type": "uint256"
+      },
+      {
+        "name": "weightBps",
+        "type": "uint256"
+      }
     ],
-    outputs: [{ name: 'receiptId', type: 'uint256' }],
-    stateMutability: 'nonpayable',
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
-    type: 'function',
-    name: 'exerciseClaim',
-    inputs: [{ name: 'receiptId', type: 'uint256' }],
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  // ---- Events ----
-  {
-    type: 'event',
-    name: 'ClaimTriggered',
-    inputs: [
-      { name: 'policyId', type: 'uint256', indexed: true },
-      { name: 'amount', type: 'uint256', indexed: false },
-      { name: 'insurer', type: 'address', indexed: false },
-      { name: 'receiptId', type: 'uint256', indexed: false },
+    "type": "function",
+    "name": "allowance",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address"
+      },
+      {
+        "name": "spender",
+        "type": "address"
+      }
     ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
-    type: 'event',
-    name: 'ClaimExercised',
-    inputs: [
-      { name: 'receiptId', type: 'uint256', indexed: true },
-      { name: 'amount', type: 'uint256', indexed: false },
-      { name: 'insurer', type: 'address', indexed: false },
+    "type": "function",
+    "name": "approve",
+    "inputs": [
+      {
+        "name": "spender",
+        "type": "address"
+      },
+      {
+        "name": "value",
+        "type": "uint256"
+      }
     ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable"
   },
+  {
+    "type": "function",
+    "name": "asset",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "balanceOf",
+    "inputs": [
+      {
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "bufferRatioBps",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "checkClaim",
+    "inputs": [
+      {
+        "name": "policyId",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "claimFees",
+    "inputs": [
+      {
+        "name": "recipient",
+        "type": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "claimReceipt",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "convertToAssets",
+    "inputs": [
+      {
+        "name": "shares",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "convertToShares",
+    "inputs": [
+      {
+        "name": "assets",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "decimals",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "deposit",
+    "inputs": [
+      {
+        "name": "assets",
+        "type": "uint256"
+      },
+      {
+        "name": "receiver",
+        "type": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "depositPremium",
+    "inputs": [
+      {
+        "name": "policyId",
+        "type": "uint256"
+      },
+      {
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "exerciseClaim",
+    "inputs": [
+      {
+        "name": "receiptId",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "getPolicyIds",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getVaultInfo",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "name": "manager",
+        "type": "address"
+      },
+      {
+        "name": "assets",
+        "type": "uint256"
+      },
+      {
+        "name": "shares",
+        "type": "uint256"
+      },
+      {
+        "name": "sharePrice",
+        "type": "uint256"
+      },
+      {
+        "name": "bufferBps",
+        "type": "uint256"
+      },
+      {
+        "name": "feeBps",
+        "type": "uint256"
+      },
+      {
+        "name": "availableBuffer",
+        "type": "uint256"
+      },
+      {
+        "name": "deployedCapital",
+        "type": "uint256"
+      },
+      {
+        "name": "policyCount",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getVaultPolicy",
+    "inputs": [
+      {
+        "name": "policyId",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "allocationWeight",
+        "type": "uint256"
+      },
+      {
+        "name": "premium",
+        "type": "uint256"
+      },
+      {
+        "name": "earnedPremium",
+        "type": "uint256"
+      },
+      {
+        "name": "coverage",
+        "type": "uint256"
+      },
+      {
+        "name": "duration",
+        "type": "uint256"
+      },
+      {
+        "name": "startTime",
+        "type": "uint256"
+      },
+      {
+        "name": "timeRemaining",
+        "type": "uint256"
+      },
+      {
+        "name": "claimed",
+        "type": "bool"
+      },
+      {
+        "name": "expired",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "insurerAdmin",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "lastFeeTimestamp",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "managementFeeBps",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "maxDeposit",
+    "inputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "maxMint",
+    "inputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "maxRedeem",
+    "inputs": [
+      {
+        "name": "owner_",
+        "type": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "maxWithdraw",
+    "inputs": [
+      {
+        "name": "owner_",
+        "type": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "mint",
+    "inputs": [
+      {
+        "name": "shares",
+        "type": "uint256"
+      },
+      {
+        "name": "receiver",
+        "type": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "name",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "oracle",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "oracleReporter",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "owner",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "policyAdded",
+    "inputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "policyIds",
+    "inputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "previewDeposit",
+    "inputs": [
+      {
+        "name": "assets",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "previewMint",
+    "inputs": [
+      {
+        "name": "shares",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "previewRedeem",
+    "inputs": [
+      {
+        "name": "shares",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "previewWithdraw",
+    "inputs": [
+      {
+        "name": "assets",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "redeem",
+    "inputs": [
+      {
+        "name": "shares",
+        "type": "uint256"
+      },
+      {
+        "name": "receiver",
+        "type": "address"
+      },
+      {
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "registry",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "renounceOwnership",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "reportEvent",
+    "inputs": [
+      {
+        "name": "policyId",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setInsurerAdmin",
+    "inputs": [
+      {
+        "name": "admin",
+        "type": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setOracleReporter",
+    "inputs": [
+      {
+        "name": "reporter",
+        "type": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "submitClaim",
+    "inputs": [
+      {
+        "name": "policyId",
+        "type": "uint256"
+      },
+      {
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "symbol",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "totalAllocationWeight",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "totalAssets",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "totalDeployedCapital",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "totalPendingClaims",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "totalSupply",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "transfer",
+    "inputs": [
+      {
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "name": "value",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "transferFrom",
+    "inputs": [
+      {
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "name": "value",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "transferOwnership",
+    "inputs": [
+      {
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "vaultManager",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "vaultName",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "vaultPolicies",
+    "inputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "policyId",
+        "type": "uint256"
+      },
+      {
+        "name": "allocationWeight",
+        "type": "uint256"
+      },
+      {
+        "name": "premiumDeposited",
+        "type": "uint256"
+      },
+      {
+        "name": "coverageAmount",
+        "type": "uint256"
+      },
+      {
+        "name": "claimed",
+        "type": "bool"
+      },
+      {
+        "name": "claimAmount",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "withdraw",
+    "inputs": [
+      {
+        "name": "assets",
+        "type": "uint256"
+      },
+      {
+        "name": "receiver",
+        "type": "address"
+      },
+      {
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "event",
+    "name": "Approval",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "name": "spender",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "name": "value",
+        "type": "uint256",
+        "indexed": false
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ClaimExercised",
+    "inputs": [
+      {
+        "name": "receiptId",
+        "type": "uint256",
+        "indexed": true
+      },
+      {
+        "name": "payout",
+        "type": "uint256",
+        "indexed": false
+      },
+      {
+        "name": "insurer",
+        "type": "address",
+        "indexed": false
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ClaimShortfall",
+    "inputs": [
+      {
+        "name": "receiptId",
+        "type": "uint256",
+        "indexed": true
+      },
+      {
+        "name": "claimAmount",
+        "type": "uint256",
+        "indexed": false
+      },
+      {
+        "name": "payout",
+        "type": "uint256",
+        "indexed": false
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ClaimTriggered",
+    "inputs": [
+      {
+        "name": "policyId",
+        "type": "uint256",
+        "indexed": true
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false
+      },
+      {
+        "name": "insurer",
+        "type": "address",
+        "indexed": false
+      },
+      {
+        "name": "receiptId",
+        "type": "uint256",
+        "indexed": false
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "Deposit",
+    "inputs": [
+      {
+        "name": "sender",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "name": "owner",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "name": "assets",
+        "type": "uint256",
+        "indexed": false
+      },
+      {
+        "name": "shares",
+        "type": "uint256",
+        "indexed": false
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "FeesCollected",
+    "inputs": [
+      {
+        "name": "recipient",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "InsurerAdminUpdated",
+    "inputs": [
+      {
+        "name": "admin",
+        "type": "address",
+        "indexed": true
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "OracleReporterUpdated",
+    "inputs": [
+      {
+        "name": "reporter",
+        "type": "address",
+        "indexed": true
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "OwnershipTransferred",
+    "inputs": [
+      {
+        "name": "previousOwner",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "name": "newOwner",
+        "type": "address",
+        "indexed": true
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "PolicyAdded",
+    "inputs": [
+      {
+        "name": "policyId",
+        "type": "uint256",
+        "indexed": true
+      },
+      {
+        "name": "allocationWeight",
+        "type": "uint256",
+        "indexed": false
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "PolicyExpired",
+    "inputs": [
+      {
+        "name": "policyId",
+        "type": "uint256",
+        "indexed": true
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "PremiumDeposited",
+    "inputs": [
+      {
+        "name": "policyId",
+        "type": "uint256",
+        "indexed": true
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "Transfer",
+    "inputs": [
+      {
+        "name": "from",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "name": "to",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "name": "value",
+        "type": "uint256",
+        "indexed": false
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "Withdraw",
+    "inputs": [
+      {
+        "name": "sender",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "name": "receiver",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "name": "owner",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "name": "assets",
+        "type": "uint256",
+        "indexed": false
+      },
+      {
+        "name": "shares",
+        "type": "uint256",
+        "indexed": false
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "error",
+    "name": "ERC20InsufficientAllowance",
+    "inputs": [
+      {
+        "name": "spender",
+        "type": "address"
+      },
+      {
+        "name": "allowance",
+        "type": "uint256"
+      },
+      {
+        "name": "needed",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ERC20InsufficientBalance",
+    "inputs": [
+      {
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "name": "balance",
+        "type": "uint256"
+      },
+      {
+        "name": "needed",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ERC20InvalidApprover",
+    "inputs": [
+      {
+        "name": "approver",
+        "type": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ERC20InvalidReceiver",
+    "inputs": [
+      {
+        "name": "receiver",
+        "type": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ERC20InvalidSender",
+    "inputs": [
+      {
+        "name": "sender",
+        "type": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ERC20InvalidSpender",
+    "inputs": [
+      {
+        "name": "spender",
+        "type": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ERC4626ExceededMaxDeposit",
+    "inputs": [
+      {
+        "name": "receiver",
+        "type": "address"
+      },
+      {
+        "name": "assets",
+        "type": "uint256"
+      },
+      {
+        "name": "max",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ERC4626ExceededMaxMint",
+    "inputs": [
+      {
+        "name": "receiver",
+        "type": "address"
+      },
+      {
+        "name": "shares",
+        "type": "uint256"
+      },
+      {
+        "name": "max",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ERC4626ExceededMaxRedeem",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address"
+      },
+      {
+        "name": "shares",
+        "type": "uint256"
+      },
+      {
+        "name": "max",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ERC4626ExceededMaxWithdraw",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address"
+      },
+      {
+        "name": "assets",
+        "type": "uint256"
+      },
+      {
+        "name": "max",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "InsuranceVault__InsufficientBuffer",
+    "inputs": [
+      {
+        "name": "requested",
+        "type": "uint256"
+      },
+      {
+        "name": "available",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "InsuranceVault__InvalidClaimAmount",
+    "inputs": [
+      {
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "name": "maxAllowed",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "InsuranceVault__InvalidParams",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InsuranceVault__InvalidReceipt",
+    "inputs": [
+      {
+        "name": "receiptId",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "InsuranceVault__NoFeesToClaim",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InsuranceVault__OracleConditionNotMet",
+    "inputs": [
+      {
+        "name": "policyId",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "InsuranceVault__PolicyAlreadyAdded",
+    "inputs": [
+      {
+        "name": "policyId",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "InsuranceVault__PolicyAlreadyClaimed",
+    "inputs": [
+      {
+        "name": "policyId",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "InsuranceVault__PolicyNotActive",
+    "inputs": [
+      {
+        "name": "policyId",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "InsuranceVault__PolicyNotInVault",
+    "inputs": [
+      {
+        "name": "policyId",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "InsuranceVault__UnauthorizedCaller",
+    "inputs": [
+      {
+        "name": "caller",
+        "type": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "InsuranceVault__WrongVerificationType",
+    "inputs": [
+      {
+        "name": "policyId",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "OwnableInvalidOwner",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "OwnableUnauthorizedAccount",
+    "inputs": [
+      {
+        "name": "account",
+        "type": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ReentrancyGuardReentrantCall",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "SafeERC20FailedOperation",
+    "inputs": [
+      {
+        "name": "token",
+        "type": "address"
+      }
+    ]
+  }
 ] as const;
 
 export const POLICY_REGISTRY_ABI = [
   {
-    type: 'function',
-    name: 'getPolicy',
-    inputs: [{ name: 'policyId', type: 'uint256' }],
-    outputs: [
+    "type": "constructor",
+    "inputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "activatePolicy",
+    "inputs": [
       {
-        name: '',
-        type: 'tuple',
-        components: [
-          { name: 'id', type: 'uint256' },
-          { name: 'name', type: 'string' },
-          { name: 'verificationType', type: 'uint8' },
-          { name: 'coverageAmount', type: 'uint256' },
-          { name: 'premiumAmount', type: 'uint256' },
-          { name: 'duration', type: 'uint256' },
-          { name: 'startTime', type: 'uint256' },
-          { name: 'insurer', type: 'address' },
-          { name: 'triggerThreshold', type: 'int256' },
-          { name: 'status', type: 'uint8' },
-        ],
+        "name": "policyId",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "advanceTime",
+    "inputs": [
+      {
+        "name": "secondsToAdd",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "currentTime",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getPolicy",
+    "inputs": [
+      {
+        "name": "policyId",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "components": [
+          {
+            "name": "id",
+            "type": "uint256"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "verificationType",
+            "type": "uint8"
+          },
+          {
+            "name": "coverageAmount",
+            "type": "uint256"
+          },
+          {
+            "name": "premiumAmount",
+            "type": "uint256"
+          },
+          {
+            "name": "duration",
+            "type": "uint256"
+          },
+          {
+            "name": "startTime",
+            "type": "uint256"
+          },
+          {
+            "name": "insurer",
+            "type": "address"
+          },
+          {
+            "name": "triggerThreshold",
+            "type": "int256"
+          },
+          {
+            "name": "status",
+            "type": "uint8"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getPolicyCount",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getRemainingDuration",
+    "inputs": [
+      {
+        "name": "policyId",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "isPolicyExpired",
+    "inputs": [
+      {
+        "name": "policyId",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "nextPolicyId",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "owner",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "policies",
+    "inputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "id",
+        "type": "uint256"
       },
+      {
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "name": "verificationType",
+        "type": "uint8"
+      },
+      {
+        "name": "coverageAmount",
+        "type": "uint256"
+      },
+      {
+        "name": "premiumAmount",
+        "type": "uint256"
+      },
+      {
+        "name": "duration",
+        "type": "uint256"
+      },
+      {
+        "name": "startTime",
+        "type": "uint256"
+      },
+      {
+        "name": "insurer",
+        "type": "address"
+      },
+      {
+        "name": "triggerThreshold",
+        "type": "int256"
+      },
+      {
+        "name": "status",
+        "type": "uint8"
+      }
     ],
-    stateMutability: 'view',
+    "stateMutability": "view"
   },
   {
-    type: 'function',
-    name: 'getPolicyCount',
-    inputs: [],
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'currentTime',
-    inputs: [],
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'timeOffset',
-    inputs: [],
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'advanceTime',
-    inputs: [{ name: 'secondsToAdd', type: 'uint256' }],
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'event',
-    name: 'TimeAdvanced',
-    inputs: [
-      { name: 'newTimestamp', type: 'uint256', indexed: false },
-      { name: 'secondsAdded', type: 'uint256', indexed: false },
+    "type": "function",
+    "name": "registerPolicy",
+    "inputs": [
+      {
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "name": "verificationType",
+        "type": "uint8"
+      },
+      {
+        "name": "coverageAmount",
+        "type": "uint256"
+      },
+      {
+        "name": "premiumAmount",
+        "type": "uint256"
+      },
+      {
+        "name": "duration",
+        "type": "uint256"
+      },
+      {
+        "name": "insurer",
+        "type": "address"
+      },
+      {
+        "name": "triggerThreshold",
+        "type": "int256"
+      }
     ],
+    "outputs": [
+      {
+        "name": "policyId",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
   },
+  {
+    "type": "function",
+    "name": "renounceOwnership",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "timeOffset",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "transferOwnership",
+    "inputs": [
+      {
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "event",
+    "name": "OwnershipTransferred",
+    "inputs": [
+      {
+        "name": "previousOwner",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "name": "newOwner",
+        "type": "address",
+        "indexed": true
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "PolicyActivated",
+    "inputs": [
+      {
+        "name": "policyId",
+        "type": "uint256",
+        "indexed": true
+      },
+      {
+        "name": "startTime",
+        "type": "uint256",
+        "indexed": false
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "PolicyRegistered",
+    "inputs": [
+      {
+        "name": "policyId",
+        "type": "uint256",
+        "indexed": true
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "indexed": false
+      },
+      {
+        "name": "verificationType",
+        "type": "uint8",
+        "indexed": false
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "TimeAdvanced",
+    "inputs": [
+      {
+        "name": "newTimestamp",
+        "type": "uint256",
+        "indexed": false
+      },
+      {
+        "name": "secondsAdded",
+        "type": "uint256",
+        "indexed": false
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "error",
+    "name": "OwnableInvalidOwner",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "OwnableUnauthorizedAccount",
+    "inputs": [
+      {
+        "name": "account",
+        "type": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "PolicyRegistry__InvalidParams",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "PolicyRegistry__InvalidStatus",
+    "inputs": [
+      {
+        "name": "policyId",
+        "type": "uint256"
+      },
+      {
+        "name": "current",
+        "type": "uint8"
+      },
+      {
+        "name": "expected",
+        "type": "uint8"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "PolicyRegistry__PolicyNotFound",
+    "inputs": [
+      {
+        "name": "policyId",
+        "type": "uint256"
+      }
+    ]
+  }
 ] as const;
 
 export const MOCK_USDC_ABI = [
   {
-    type: 'function',
-    name: 'balanceOf',
-    inputs: [{ name: 'account', type: 'address' }],
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
+    "type": "constructor",
+    "inputs": [],
+    "stateMutability": "nonpayable"
   },
   {
-    type: 'function',
-    name: 'approve',
-    inputs: [
-      { name: 'spender', type: 'address' },
-      { name: 'amount', type: 'uint256' },
+    "type": "function",
+    "name": "allowance",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address"
+      },
+      {
+        "name": "spender",
+        "type": "address"
+      }
     ],
-    outputs: [{ name: '', type: 'bool' }],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    name: 'allowance',
-    inputs: [
-      { name: 'owner', type: 'address' },
-      { name: 'spender', type: 'address' },
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
     ],
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
+    "stateMutability": "view"
   },
   {
-    type: 'function',
-    name: 'decimals',
-    inputs: [],
-    outputs: [{ name: '', type: 'uint8' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'mint',
-    inputs: [
-      { name: 'to', type: 'address' },
-      { name: 'amount', type: 'uint256' },
+    "type": "function",
+    "name": "approve",
+    "inputs": [
+      {
+        "name": "spender",
+        "type": "address"
+      },
+      {
+        "name": "value",
+        "type": "uint256"
+      }
     ],
-    outputs: [],
-    stateMutability: 'nonpayable',
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable"
   },
+  {
+    "type": "function",
+    "name": "balanceOf",
+    "inputs": [
+      {
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "decimals",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "mint",
+    "inputs": [
+      {
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "name",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "symbol",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "totalSupply",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "transfer",
+    "inputs": [
+      {
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "name": "value",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "transferFrom",
+    "inputs": [
+      {
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "name": "value",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "event",
+    "name": "Approval",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "name": "spender",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "name": "value",
+        "type": "uint256",
+        "indexed": false
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "Transfer",
+    "inputs": [
+      {
+        "name": "from",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "name": "to",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "name": "value",
+        "type": "uint256",
+        "indexed": false
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "error",
+    "name": "ERC20InsufficientAllowance",
+    "inputs": [
+      {
+        "name": "spender",
+        "type": "address"
+      },
+      {
+        "name": "allowance",
+        "type": "uint256"
+      },
+      {
+        "name": "needed",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ERC20InsufficientBalance",
+    "inputs": [
+      {
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "name": "balance",
+        "type": "uint256"
+      },
+      {
+        "name": "needed",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ERC20InvalidApprover",
+    "inputs": [
+      {
+        "name": "approver",
+        "type": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ERC20InvalidReceiver",
+    "inputs": [
+      {
+        "name": "receiver",
+        "type": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ERC20InvalidSender",
+    "inputs": [
+      {
+        "name": "sender",
+        "type": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ERC20InvalidSpender",
+    "inputs": [
+      {
+        "name": "spender",
+        "type": "address"
+      }
+    ]
+  }
 ] as const;
 
 export const MOCK_ORACLE_ABI = [
   {
-    type: 'function',
-    name: 'btcPrice',
-    inputs: [],
-    outputs: [{ name: '', type: 'int256' }],
-    stateMutability: 'view',
+    "type": "constructor",
+    "inputs": [],
+    "stateMutability": "nonpayable"
   },
   {
-    type: 'function',
-    name: 'flightDelayed',
-    inputs: [],
-    outputs: [{ name: '', type: 'bool' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'getBtcPrice',
-    inputs: [],
-    outputs: [
-      { name: 'price', type: 'int256' },
-      { name: 'updatedAt', type: 'uint256' },
+    "type": "function",
+    "name": "btcPrice",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "int256"
+      }
     ],
-    stateMutability: 'view',
+    "stateMutability": "view"
   },
   {
-    type: 'function',
-    name: 'getFlightStatus',
-    inputs: [],
-    outputs: [
-      { name: 'delayed', type: 'bool' },
-      { name: 'updatedAt', type: 'uint256' },
+    "type": "function",
+    "name": "flightDelayed",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool"
+      }
     ],
-    stateMutability: 'view',
+    "stateMutability": "view"
   },
   {
-    type: 'function',
-    name: 'setBtcPrice',
-    inputs: [{ name: 'price', type: 'int256' }],
-    outputs: [],
-    stateMutability: 'nonpayable',
+    "type": "function",
+    "name": "getBtcPrice",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "price",
+        "type": "int256"
+      },
+      {
+        "name": "updatedAt",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
-    type: 'function',
-    name: 'setFlightStatus',
-    inputs: [{ name: 'delayed', type: 'bool' }],
-    outputs: [],
-    stateMutability: 'nonpayable',
+    "type": "function",
+    "name": "getFlightStatus",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "delayed",
+        "type": "bool"
+      },
+      {
+        "name": "updatedAt",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view"
   },
+  {
+    "type": "function",
+    "name": "lastBtcUpdate",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "lastFlightUpdate",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "owner",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "renounceOwnership",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setBtcPrice",
+    "inputs": [
+      {
+        "name": "price",
+        "type": "int256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setFlightStatus",
+    "inputs": [
+      {
+        "name": "delayed",
+        "type": "bool"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "transferOwnership",
+    "inputs": [
+      {
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "event",
+    "name": "BtcPriceUpdated",
+    "inputs": [
+      {
+        "name": "price",
+        "type": "int256",
+        "indexed": false
+      },
+      {
+        "name": "timestamp",
+        "type": "uint256",
+        "indexed": false
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "FlightStatusUpdated",
+    "inputs": [
+      {
+        "name": "delayed",
+        "type": "bool",
+        "indexed": false
+      },
+      {
+        "name": "timestamp",
+        "type": "uint256",
+        "indexed": false
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "OwnershipTransferred",
+    "inputs": [
+      {
+        "name": "previousOwner",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "name": "newOwner",
+        "type": "address",
+        "indexed": true
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "error",
+    "name": "MockOracle__InvalidPrice",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "OwnableInvalidOwner",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "OwnableUnauthorizedAccount",
+    "inputs": [
+      {
+        "name": "account",
+        "type": "address"
+      }
+    ]
+  }
 ] as const;
 
 export const CLAIM_RECEIPT_ABI = [
   {
-    type: 'function',
-    name: 'getReceipt',
-    inputs: [{ name: 'receiptId', type: 'uint256' }],
-    outputs: [
-      {
-        name: '',
-        type: 'tuple',
-        components: [
-          { name: 'policyId', type: 'uint256' },
-          { name: 'claimAmount', type: 'uint256' },
-          { name: 'vault', type: 'address' },
-          { name: 'insurer', type: 'address' },
-          { name: 'timestamp', type: 'uint256' },
-          { name: 'exercised', type: 'bool' },
-        ],
-      },
-    ],
-    stateMutability: 'view',
+    "type": "constructor",
+    "inputs": [],
+    "stateMutability": "nonpayable"
   },
   {
-    type: 'function',
-    name: 'nextReceiptId',
-    inputs: [],
-    outputs: [{ name: '', type: 'uint256' }],
-    stateMutability: 'view',
+    "type": "function",
+    "name": "approve",
+    "inputs": [
+      {
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "name": "tokenId",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
+  {
+    "type": "function",
+    "name": "authorizedMinters",
+    "inputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "balanceOf",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getApproved",
+    "inputs": [
+      {
+        "name": "tokenId",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getReceipt",
+    "inputs": [
+      {
+        "name": "receiptId",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "components": [
+          {
+            "name": "policyId",
+            "type": "uint256"
+          },
+          {
+            "name": "claimAmount",
+            "type": "uint256"
+          },
+          {
+            "name": "vault",
+            "type": "address"
+          },
+          {
+            "name": "insurer",
+            "type": "address"
+          },
+          {
+            "name": "timestamp",
+            "type": "uint256"
+          },
+          {
+            "name": "exercised",
+            "type": "bool"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "isApprovedForAll",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address"
+      },
+      {
+        "name": "operator",
+        "type": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "markExercised",
+    "inputs": [
+      {
+        "name": "receiptId",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "mint",
+    "inputs": [
+      {
+        "name": "insurer",
+        "type": "address"
+      },
+      {
+        "name": "policyId",
+        "type": "uint256"
+      },
+      {
+        "name": "claimAmount",
+        "type": "uint256"
+      },
+      {
+        "name": "vault",
+        "type": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "receiptId",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "name",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "nextReceiptId",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "owner",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "ownerOf",
+    "inputs": [
+      {
+        "name": "tokenId",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "receipts",
+    "inputs": [
+      {
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "policyId",
+        "type": "uint256"
+      },
+      {
+        "name": "claimAmount",
+        "type": "uint256"
+      },
+      {
+        "name": "vault",
+        "type": "address"
+      },
+      {
+        "name": "insurer",
+        "type": "address"
+      },
+      {
+        "name": "timestamp",
+        "type": "uint256"
+      },
+      {
+        "name": "exercised",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "renounceOwnership",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "safeTransferFrom",
+    "inputs": [
+      {
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "name": "tokenId",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "safeTransferFrom",
+    "inputs": [
+      {
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "name": "data",
+        "type": "bytes"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setApprovalForAll",
+    "inputs": [
+      {
+        "name": "operator",
+        "type": "address"
+      },
+      {
+        "name": "approved",
+        "type": "bool"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setAuthorizedMinter",
+    "inputs": [
+      {
+        "name": "minter",
+        "type": "address"
+      },
+      {
+        "name": "authorized",
+        "type": "bool"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "supportsInterface",
+    "inputs": [
+      {
+        "name": "interfaceId",
+        "type": "bytes4"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "symbol",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "tokenURI",
+    "inputs": [
+      {
+        "name": "tokenId",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "transferFrom",
+    "inputs": [
+      {
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "name": "tokenId",
+        "type": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "transferOwnership",
+    "inputs": [
+      {
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "event",
+    "name": "Approval",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "name": "approved",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "name": "tokenId",
+        "type": "uint256",
+        "indexed": true
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ApprovalForAll",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "name": "operator",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "name": "approved",
+        "type": "bool",
+        "indexed": false
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "MinterUpdated",
+    "inputs": [
+      {
+        "name": "minter",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "name": "authorized",
+        "type": "bool",
+        "indexed": false
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "OwnershipTransferred",
+    "inputs": [
+      {
+        "name": "previousOwner",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "name": "newOwner",
+        "type": "address",
+        "indexed": true
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ReceiptExercised",
+    "inputs": [
+      {
+        "name": "receiptId",
+        "type": "uint256",
+        "indexed": true
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ReceiptMinted",
+    "inputs": [
+      {
+        "name": "receiptId",
+        "type": "uint256",
+        "indexed": true
+      },
+      {
+        "name": "insurer",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "name": "policyId",
+        "type": "uint256",
+        "indexed": false
+      },
+      {
+        "name": "claimAmount",
+        "type": "uint256",
+        "indexed": false
+      },
+      {
+        "name": "vault",
+        "type": "address",
+        "indexed": false
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "Transfer",
+    "inputs": [
+      {
+        "name": "from",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "name": "to",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "name": "tokenId",
+        "type": "uint256",
+        "indexed": true
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "error",
+    "name": "ClaimReceipt__AlreadyExercised",
+    "inputs": [
+      {
+        "name": "receiptId",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ClaimReceipt__NonTransferable",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ClaimReceipt__OnlyIssuingVault",
+    "inputs": [
+      {
+        "name": "receiptId",
+        "type": "uint256"
+      },
+      {
+        "name": "caller",
+        "type": "address"
+      },
+      {
+        "name": "vault",
+        "type": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ClaimReceipt__ReceiptNotFound",
+    "inputs": [
+      {
+        "name": "receiptId",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ClaimReceipt__UnauthorizedMinter",
+    "inputs": [
+      {
+        "name": "caller",
+        "type": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ERC721IncorrectOwner",
+    "inputs": [
+      {
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "name": "owner",
+        "type": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ERC721InsufficientApproval",
+    "inputs": [
+      {
+        "name": "operator",
+        "type": "address"
+      },
+      {
+        "name": "tokenId",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ERC721InvalidApprover",
+    "inputs": [
+      {
+        "name": "approver",
+        "type": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ERC721InvalidOperator",
+    "inputs": [
+      {
+        "name": "operator",
+        "type": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ERC721InvalidOwner",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ERC721InvalidReceiver",
+    "inputs": [
+      {
+        "name": "receiver",
+        "type": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ERC721InvalidSender",
+    "inputs": [
+      {
+        "name": "sender",
+        "type": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ERC721NonexistentToken",
+    "inputs": [
+      {
+        "name": "tokenId",
+        "type": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "OwnableInvalidOwner",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "OwnableUnauthorizedAccount",
+    "inputs": [
+      {
+        "name": "account",
+        "type": "address"
+      }
+    ]
+  }
 ] as const;
 
 // =============================================================================
-// Deployed contract addresses.
-// Update these after deployment (forge script output).
+// Deployed contract addresses (Anvil local deployment via DemoSetup.s.sol).
 // =============================================================================
 
 export const ADDRESSES = {
-  vaultFactory: '0x0000000000000000000000000000000000000000' as `0x${string}`,
-  policyRegistry: '0x0000000000000000000000000000000000000000' as `0x${string}`,
-  mockUSDC: '0x0000000000000000000000000000000000000000' as `0x${string}`,
-  mockOracle: '0x0000000000000000000000000000000000000000' as `0x${string}`,
-  claimReceipt: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+  vaultFactory: '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9' as `0x${string}`,
+  policyRegistry: '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9' as `0x${string}`,
+  mockUSDC: '0x5FbDB2315678afecb367f032d93F642f64180aa3' as `0x${string}`,
+  mockOracle: '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512' as `0x${string}`,
+  claimReceipt: '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0' as `0x${string}`,
+  // Vault addresses (deployed by factory, discovered via factory.getVaults())
+  // Vault A (Balanced Core): 0x856e4424f806D16E8CBC702B3c0F2ede5468eae5
+  // Vault B (DeFi Alpha):    0xb0279Db6a2F1E01fbC8483FCCef0Be2bC6299cC3
 } as const;

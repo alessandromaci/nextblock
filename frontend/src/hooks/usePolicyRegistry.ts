@@ -58,7 +58,7 @@ export function useAllPolicies(count: bigint | undefined) {
     address: ADDRESSES.policyRegistry,
     abi: POLICY_REGISTRY_ABI,
     functionName: 'getPolicy' as const,
-    args: [BigInt(i + 1)] as const,
+    args: [BigInt(i)] as const,
   }));
 
   return useReadContracts({

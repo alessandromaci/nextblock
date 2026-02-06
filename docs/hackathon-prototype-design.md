@@ -873,7 +873,7 @@ Note: With only 3 policies, concentration risk is higher than a production vault
 
 ## 7. User Journeys and Frontend for the Hackathon Prototype
 
-### 7.1 Frontend: 3 Pages + 1 Modal (Morpho-style)
+### 7.1 Frontend: 3 Pages + Inline Sidebar (Morpho-style)
 
 **Page 1: Vault Discovery**
 - List of all available vaults (2 cards: Balanced Core + DeFi Alpha)
@@ -888,14 +888,15 @@ Note: With only 3 policies, concentration risk is higher than a production vault
 - Deployment ratio visualization (80% deployed / 20% buffer)
 - Fee structure
 - Yield accrual / NAV performance
-- Deposit/Withdraw modal triggered from this page
+- Deposit/Withdraw inline sidebar on the right side (Morpho-style)
 - The "I can see exactly what my money backs" moment
 
-**Modal: Deposit / Withdraw (within Vault Detail)**
+**Inline Sidebar: Deposit / Withdraw (on Vault Detail page)**
+- Right-side panel always visible (Morpho-style), not a modal overlay
 - Enter amount, see share calculation
 - Confirm transaction
 - Post-deposit confirmation: "Your $1,000 is backing N insurance policies"
-- Withdraw tab: shows available buffer, processes redemption
+- Withdraw tab (integrated): shows available buffer, processes redemption
 
 **Page 3: Admin / Curator (combined)**
 - Section 1 -- Vault Management: Create vault, select policies from available pool, set allocations, set fees, assign manager
@@ -1128,7 +1129,7 @@ All blocking decisions have been resolved by Alessandro. This section documents 
 | 7 | Vault A | "Balanced Core" -- all 3 policies, NextBlock Core Team | Alessandro |
 | 8 | Vault B | "DeFi Alpha" -- P1+P2 only, AlphaRe Capital | Alessandro |
 | 9 | Shared policy | P1 (BTC) in both vaults | Alessandro |
-| 10 | Frontend pages | 3 pages + 1 modal (Morpho-style) | Alessandro |
+| 10 | Frontend pages | 3 pages + inline sidebar (Morpho-style) | Alessandro |
 | 11 | Persona | Dual framing (institutional pitch, retail demo) | Alessandro |
 | 12 | Verification labels | Subtle label in UI (not prominent categorization) | Alessandro |
 | 13 | Claim triggers | 3 distinct paths: permissionless / oracle reporter / insurer admin | Alessandro |
@@ -1150,7 +1151,7 @@ All blocking decisions have been resolved by Alessandro. This section documents 
 | # | Decision | Choice | Decided By |
 |---|----------|--------|------------|
 | 26 | Token standard | ERC-4626 (see decision 001) | Advisor rec, confirmed |
-| 27 | Chain | Base Sepolia + Hardhat local backup | Advisor rec, confirmed |
+| 27 | Chain | Base Sepolia + Anvil local backup | Advisor rec, confirmed |
 | 28 | Toolchain | Foundry (forge/anvil) | Advisor rec, confirmed |
 | 29 | Admin model | Simple Ownable (single admin) | Advisor rec |
 | 30 | Oracle | Admin-controlled mock | Advisor rec |
@@ -1197,7 +1198,7 @@ All blocking decisions have been resolved by Alessandro. This section documents 
 | Early exit | Buffer-only for hackathon | Simple, production mechanisms in pitch |
 | Claim triggers | 3 distinct paths (permissionless / oracle / insurer) | The most interesting technical detail |
 | Time simulation | Manual "advance" button | Presenter controls pacing |
-| Frontend | 3 pages + 1 modal | Clean Morpho-style UX |
+| Frontend | 3 pages + inline sidebar | Clean Morpho-style UX |
 | PT/YT | Skip | Out of scope |
 | NXB token | Skip | Out of scope |
 | KYC / ERC-3643 | Skip | Out of scope |
@@ -1299,12 +1300,20 @@ function totalAssets() public view override returns (uint256) {
     uint256 balance = IERC20(asset()).balanceOf(address(this));
     uint256 unearned = _totalUnearnedPremiums();
     uint256 pending = totalPendingClaims;
-    uint256 fees = _accruedFees();
 
-    // Floor at zero to prevent uint256 underflow
-    uint256 deductions = unearned + pending + fees;
-    if (deductions >= balance) return 0;
-    return balance - deductions;
+    // Compute pre-fee assets first to break circularity
+    uint256 preFeeAssets;
+    if (balance > unearned + pending) {
+        preFeeAssets = balance - unearned - pending;
+    } else {
+        return 0;  // Floor at zero, never revert
+    }
+
+    uint256 fees = _accruedFees(preFeeAssets);
+    if (preFeeAssets > fees) {
+        return preFeeAssets - fees;
+    }
+    return 0;
 }
 ```
 
@@ -1312,7 +1321,7 @@ Where:
 - `USDC.balanceOf(vault)` = investor deposits + insurer premiums - exercised claims (real USDC in contract)
 - `_totalUnearnedPremiums()` = `Σ(policy.premium * max(0, duration - elapsed) / duration)` for each active policy
 - `totalPendingClaims` = sum of triggered-but-not-yet-exercised claim amounts (ClaimReceipt tokens outstanding)
-- `_accruedFees()` = `managementFeeRate * totalAssets_preFee * elapsed / 365 days`
+- `_accruedFees(preFeeAssets)` = `managementFeeRate * preFeeAssets * elapsed / 365 days` (pre-fee basis to break circularity)
 
 **Important**: `totalDeployedCapital` is NOT in this formula. It is tracked separately for:
 - Enforcing `maxWithdraw()` (capped at available buffer = balance - deployed - pendingClaims)
@@ -1532,5 +1541,5 @@ This document is build-ready. All decisions are resolved. Hand to the tech team 
 
 **Build order**:
 - Day 1: Smart contracts (Foundry -- MockUSDC, MockOracle, PolicyRegistry, InsuranceVault, VaultFactory, ClaimReceipt)
-- Day 2: Frontend (Next.js + wagmi/viem + Tailwind -- 3 pages + 1 modal)
+- Day 2: Frontend (Next.js + wagmi/viem + Tailwind -- 3 pages + inline sidebar)
 - Day 3: Polish + deploy to Base Sepolia + demo rehearsal
