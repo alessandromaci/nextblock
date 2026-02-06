@@ -3594,13 +3594,15 @@ export const CHAIN_ADDRESSES: Record<number, ChainAddresses> = {
     // Vault A (Balanced Core): 0x856e4424f806D16E8CBC702B3c0F2ede5468eae5
     // Vault B (DeFi Alpha):    0xb0279Db6a2F1E01fbC8483FCCef0Be2bC6299cC3
   },
-  // Base Sepolia (to be filled after deployment)
+  // Base Sepolia
   84532: {
-    vaultFactory: ZERO,
-    policyRegistry: ZERO,
-    mockUSDC: ZERO,
-    mockOracle: ZERO,
-    claimReceipt: ZERO,
+    vaultFactory: '0x74c27cA51758407Fd7fAC612630553f3900B7B22',
+    policyRegistry: '0xb7c01385B368954573bEc08C1267FE816869D2a1',
+    mockUSDC: '0x7777f841e0deFa5afF017329cc19F195E66dB3Ac',
+    mockOracle: '0xd66Fc7407673d05808378063bed527bf03Af6000',
+    claimReceipt: '0xd3D94fde19686Eb128Da9f994Fc9Fe78ABf521Aa',
+    // Vault A (Balanced Core): 0x26c5064c177f0dedc4BBDcab08e9684f500464b9
+    // Vault B (DeFi Alpha):    0x1E9F1D42C4Eeaae4e83417b793A51a39CBfEB3c8
   },
 };
 
