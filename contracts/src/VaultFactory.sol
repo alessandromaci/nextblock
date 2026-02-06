@@ -5,13 +5,14 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {InsuranceVault} from "./InsuranceVault.sol";
+import {ClaimReceipt} from "./ClaimReceipt.sol";
 
 /// @title VaultFactory
 /// @notice Deploys and tracks InsuranceVault instances.
 /// @dev Infrastructure addresses (USDC, registry, oracle, claimReceipt) are set once
 ///      and shared by all vaults created through this factory.
-///      NOTE: Does NOT auto-register ClaimReceipt minters. Admin must call
-///      ClaimReceipt.setAuthorizedMinter(vault, true) separately after vault creation.
+///      Permissionless: anyone can create a vault (they become vault owner).
+///      Auto-registers new vaults as ClaimReceipt minters via registrar role.
 contract VaultFactory is Ownable {
     // --- Immutables ---
     address public immutable asset;           // MockUSDC
@@ -54,6 +55,7 @@ contract VaultFactory is Ownable {
     }
 
     /// @notice Create a new InsuranceVault with the specified parameters.
+    ///         Permissionless: anyone can create a vault. msg.sender becomes vault owner.
     /// @param name Share token name (e.g., "NextBlock Balanced Core")
     /// @param symbol Share token symbol (e.g., "nxbBAL")
     /// @param vaultName Display name for the vault
@@ -68,7 +70,7 @@ contract VaultFactory is Ownable {
         address vaultManager_,
         uint256 bufferRatioBps_,
         uint256 managementFeeBps_
-    ) external onlyOwner returns (address vault) {
+    ) external returns (address vault) {
         if (vaultManager_ == address(0)) revert VaultFactory__InvalidParams();
         if (bufferRatioBps_ > BASIS_POINTS) revert VaultFactory__InvalidParams();
         if (managementFeeBps_ > BASIS_POINTS) revert VaultFactory__InvalidParams();
@@ -78,7 +80,7 @@ contract VaultFactory is Ownable {
             name,
             symbol,
             vaultName,
-            owner(),          // owner of the vault = factory owner (admin)
+            msg.sender,       // owner of the vault = caller
             vaultManager_,
             bufferRatioBps_,
             managementFeeBps_,
@@ -90,6 +92,9 @@ contract VaultFactory is Ownable {
         vault = address(newVault);
         deployedVaults.push(vault);
         isVault[vault] = true;
+
+        // Auto-register vault as ClaimReceipt minter (factory is registrar)
+        ClaimReceipt(claimReceiptAddr).setAuthorizedMinter(vault, true);
 
         emit VaultCreated(vault, name, symbol, vaultName, vaultManager_, bufferRatioBps_, managementFeeBps_);
     }

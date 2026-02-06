@@ -446,6 +446,23 @@ export const INSURANCE_VAULT_ABI = [
   },
   {
     "type": "function",
+    "name": "authorizedPremiumDepositors",
+    "inputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "balanceOf",
     "inputs": [
       {
@@ -1046,6 +1063,22 @@ export const INSURANCE_VAULT_ABI = [
   },
   {
     "type": "function",
+    "name": "setAuthorizedPremiumDepositor",
+    "inputs": [
+      {
+        "name": "depositor",
+        "type": "address"
+      },
+      {
+        "name": "authorized",
+        "type": "bool"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "setInsurerAdmin",
     "inputs": [
       {
@@ -1324,6 +1357,28 @@ export const INSURANCE_VAULT_ABI = [
   },
   {
     "type": "event",
+    "name": "ClaimAutoExercised",
+    "inputs": [
+      {
+        "name": "receiptId",
+        "type": "uint256",
+        "indexed": true
+      },
+      {
+        "name": "payout",
+        "type": "uint256",
+        "indexed": false
+      },
+      {
+        "name": "insurer",
+        "type": "address",
+        "indexed": false
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "ClaimExercised",
     "inputs": [
       {
@@ -1359,7 +1414,7 @@ export const INSURANCE_VAULT_ABI = [
         "indexed": false
       },
       {
-        "name": "payout",
+        "name": "vaultBalance",
         "type": "uint256",
         "indexed": false
       }
@@ -1519,6 +1574,23 @@ export const INSURANCE_VAULT_ABI = [
       {
         "name": "amount",
         "type": "uint256",
+        "indexed": false
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "PremiumDepositorUpdated",
+    "inputs": [
+      {
+        "name": "depositor",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "name": "authorized",
+        "type": "bool",
         "indexed": false
       }
     ],
@@ -3091,6 +3163,18 @@ export const CLAIM_RECEIPT_ABI = [
   },
   {
     "type": "function",
+    "name": "registrar",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "renounceOwnership",
     "inputs": [],
     "outputs": [],
@@ -3167,6 +3251,18 @@ export const CLAIM_RECEIPT_ABI = [
       {
         "name": "authorized",
         "type": "bool"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setRegistrar",
+    "inputs": [
+      {
+        "name": "registrar_",
+        "type": "address"
       }
     ],
     "outputs": [],
@@ -3374,6 +3470,18 @@ export const CLAIM_RECEIPT_ABI = [
   },
   {
     "type": "event",
+    "name": "RegistrarUpdated",
+    "inputs": [
+      {
+        "name": "registrar",
+        "type": "address",
+        "indexed": true
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "Transfer",
     "inputs": [
       {
@@ -3440,6 +3548,16 @@ export const CLAIM_RECEIPT_ABI = [
   {
     "type": "error",
     "name": "ClaimReceipt__UnauthorizedMinter",
+    "inputs": [
+      {
+        "name": "caller",
+        "type": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ClaimReceipt__UnauthorizedRegistrar",
     "inputs": [
       {
         "name": "caller",
@@ -3594,15 +3712,15 @@ export const CHAIN_ADDRESSES: Record<number, ChainAddresses> = {
     // Vault A (Balanced Core): 0x856e4424f806D16E8CBC702B3c0F2ede5468eae5
     // Vault B (DeFi Alpha):    0xb0279Db6a2F1E01fbC8483FCCef0Be2bC6299cC3
   },
-  // Base Sepolia
+  // Base Sepolia (V2 deploy - 2026-02-06)
   84532: {
-    vaultFactory: '0x74c27cA51758407Fd7fAC612630553f3900B7B22',
-    policyRegistry: '0xb7c01385B368954573bEc08C1267FE816869D2a1',
-    mockUSDC: '0x7777f841e0deFa5afF017329cc19F195E66dB3Ac',
-    mockOracle: '0xd66Fc7407673d05808378063bed527bf03Af6000',
-    claimReceipt: '0xd3D94fde19686Eb128Da9f994Fc9Fe78ABf521Aa',
-    // Vault A (Balanced Core): 0x26c5064c177f0dedc4BBDcab08e9684f500464b9
-    // Vault B (DeFi Alpha):    0x1E9F1D42C4Eeaae4e83417b793A51a39CBfEB3c8
+    vaultFactory: '0xFfC5B0c4977ac151EA7bd4d4E77c8C93cF51B118',
+    policyRegistry: '0x07B088adE0612E2CDE85f60ED8Cbeb552A4dcAED',
+    mockUSDC: '0xD011bF408A804679C6733926A20cA6Dae2d4837b',
+    mockOracle: '0x0e5f1dC0AAb5Dc3993200723cee24bD4D23a1308',
+    claimReceipt: '0xf9F87d030E7038382aC0fE4a9d9150744B15fD55',
+    // Vault A (Balanced Core): 0x6F8BDb44048dC1D5509Ce7b5C8dEB85A99039379
+    // Vault B (DeFi Alpha):    0xB1b10C0dfBc41d2d7d0321E3A9807409f4951a85
   },
 };
 

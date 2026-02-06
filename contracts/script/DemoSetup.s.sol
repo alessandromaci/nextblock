@@ -102,6 +102,10 @@ contract DemoSetup is Script {
         );
         console.log("VaultFactory:", address(factory));
 
+        // Set factory as ClaimReceipt registrar (auto-registers minters on vault creation)
+        claimReceipt.setRegistrar(address(factory));
+        console.log("Factory set as ClaimReceipt registrar");
+
         // Vault A: "Balanced Core" -- 20% buffer, 0.5% fee, managed by deployer
         address vaultAAddr = factory.createVault(
             "NextBlock Balanced Core",
@@ -126,10 +130,8 @@ contract DemoSetup is Script {
         vaultB = InsuranceVault(vaultBAddr);
         console.log("Vault B (DeFi Alpha):", vaultBAddr);
 
-        // Authorize vaults as ClaimReceipt minters
-        claimReceipt.setAuthorizedMinter(vaultAAddr, true);
-        claimReceipt.setAuthorizedMinter(vaultBAddr, true);
-        console.log("ClaimReceipt minters authorized");
+        // Vaults are auto-registered as ClaimReceipt minters by factory
+        console.log("ClaimReceipt minters auto-registered by factory");
 
         // ============================================
         // Phase 3: Register + activate policies

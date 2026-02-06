@@ -55,7 +55,8 @@ export function ClaimTriggers({ vaultAddresses, vaultNames }: ClaimTriggersProps
         Claim Triggers
       </h3>
       <p className="mb-4 text-xs text-gray-500">
-        Trigger claims on policies. Each type has a different verification path.
+        Trigger claims on policies. Claims auto-settle when the vault has
+        sufficient funds. Each type has a different verification path.
       </p>
 
       {/* Vault selector */}
@@ -101,7 +102,7 @@ export function ClaimTriggers({ vaultAddresses, vaultNames }: ClaimTriggersProps
             disabled={checkClaim.isPending}
             className="flex-1 rounded-lg border border-emerald-200 px-3 py-2 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-50 disabled:opacity-50"
           >
-            {checkClaim.isPending ? 'Checking...' : 'Check Claim'}
+            {checkClaim.isPending ? 'Triggering...' : 'Trigger & Settle'}
           </button>
           {vaultAddresses.length > 1 && (
             <button
@@ -114,6 +115,11 @@ export function ClaimTriggers({ vaultAddresses, vaultNames }: ClaimTriggersProps
             </button>
           )}
         </div>
+        {checkClaim.isSuccess && (
+          <p className="mt-2 text-xs text-emerald-600">
+            Claim triggered and auto-settled.
+          </p>
+        )}
         {checkClaim.error && (
           <p className="mt-2 text-xs text-red-600">
             {(checkClaim.error as Error).message?.split('\n')[0] || 'Transaction failed'}
@@ -140,8 +146,13 @@ export function ClaimTriggers({ vaultAddresses, vaultNames }: ClaimTriggersProps
           disabled={reportEvent.isPending}
           className="w-full rounded-lg border border-amber-200 px-3 py-2 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-50 disabled:opacity-50"
         >
-          {reportEvent.isPending ? 'Reporting...' : 'Report Event'}
+          {reportEvent.isPending ? 'Triggering...' : 'Trigger & Settle'}
         </button>
+        {reportEvent.isSuccess && (
+          <p className="mt-2 text-xs text-emerald-600">
+            Claim triggered and auto-settled.
+          </p>
+        )}
         {reportEvent.error && (
           <p className="mt-2 text-xs text-red-600">
             {(reportEvent.error as Error).message?.split('\n')[0] || 'Transaction failed'}
@@ -176,7 +187,7 @@ export function ClaimTriggers({ vaultAddresses, vaultNames }: ClaimTriggersProps
             disabled={submitClaim.isPending || !p3Amount}
             className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
           >
-            {submitClaim.isPending ? '...' : 'Submit'}
+            {submitClaim.isPending ? '...' : 'Submit & Settle'}
           </button>
         </div>
         <div className="mt-2 flex gap-2">
@@ -195,6 +206,11 @@ export function ClaimTriggers({ vaultAddresses, vaultNames }: ClaimTriggersProps
             $40K (full)
           </button>
         </div>
+        {submitClaim.isSuccess && (
+          <p className="mt-2 text-xs text-emerald-600">
+            Claim triggered and auto-settled.
+          </p>
+        )}
         {submitClaim.error && (
           <p className="mt-2 text-xs text-red-600">
             {(submitClaim.error as Error).message?.split('\n')[0] || 'Transaction failed'}

@@ -49,6 +49,9 @@ contract FullFlowTest is Test {
             address(claimReceipt)
         );
 
+        // Set factory as registrar so it can auto-register vault minters
+        claimReceipt.setRegistrar(address(factory));
+
         address vaultAAddr = factory.createVault(
             "NextBlock Balanced Core", "nxbBAL", "Balanced Core",
             managerA, 2000, 50  // 20% buffer, 0.5% fee
@@ -61,8 +64,7 @@ contract FullFlowTest is Test {
         vaultA = InsuranceVault(vaultAAddr);
         vaultB = InsuranceVault(vaultBAddr);
 
-        claimReceipt.setAuthorizedMinter(vaultAAddr, true);
-        claimReceipt.setAuthorizedMinter(vaultBAddr, true);
+        // No manual setAuthorizedMinter calls needed -- factory auto-registers via registrar
 
         // Phase 3: Register + activate policies
         registry.registerPolicy("BTC Price Protection", PolicyRegistry.VerificationType.ON_CHAIN, 50_000e6, 2_500e6, 90 days, insurer, 80_000e8);
@@ -159,6 +161,8 @@ contract FullFlowTest is Test {
 
     function test_sharedPolicyClaimFlow() public {
         // Setup: Investor deposits into both vaults
+        // Vault A: $10K + $6.1K premiums = $16.1K < $50K = SHORTFALL
+        // Vault B: $5K + $3.7K premiums = $8.7K < $50K = SHORTFALL
         vm.startPrank(investor);
         usdc.approve(address(vaultA), 10_000e6);
         vaultA.deposit(10_000e6, investor);
@@ -177,12 +181,12 @@ contract FullFlowTest is Test {
         vm.prank(admin);
         oracle.setBtcPrice(75_000e8);
 
-        // Trigger P1 on Vault A
+        // Trigger P1 on Vault A -- SHORTFALL ($16.1K < $50K)
         vaultA.checkClaim(0);
         uint256 assetsA_after = vaultA.totalAssets();
         assertLt(assetsA_after, assetsA_before, "Vault A NAV should drop after P1 claim");
 
-        // Trigger P1 on Vault B independently
+        // Trigger P1 on Vault B independently -- SHORTFALL ($8.7K < $50K)
         vaultB.checkClaim(0);
         uint256 assetsB_after = vaultB.totalAssets();
         assertLt(assetsB_after, assetsB_before, "Vault B NAV should drop after P1 claim");
@@ -197,12 +201,19 @@ contract FullFlowTest is Test {
         assertEq(receiptB.vault, address(vaultB));
         assertEq(receiptA.claimAmount, 50_000e6);
         assertEq(receiptB.claimAmount, 50_000e6);
+
+        // Both are shortfall -- receipts NOT auto-exercised
+        assertFalse(receiptA.exercised);
+        assertFalse(receiptB.exercised);
+        assertEq(vaultA.totalPendingClaims(), 50_000e6);
+        assertEq(vaultB.totalPendingClaims(), 50_000e6);
     }
 
     // =========== HP3: FLIGHT DELAY ===========
 
     function test_flightDelayClaimFlow() public {
-        // Setup
+        // Setup: Investor deposits $10K into Vault A
+        // Vault A balance = $10K + $6.1K premiums = $16.1K > $15K claim = AUTO-EXERCISE
         vm.startPrank(investor);
         usdc.approve(address(vaultA), 10_000e6);
         vaultA.deposit(10_000e6, investor);
@@ -214,30 +225,33 @@ contract FullFlowTest is Test {
         vm.prank(admin);
         oracle.setFlightStatus(true);
 
-        // Oracle reporter triggers claim
+        // Oracle reporter triggers claim -- auto-exercise since $16.1K > $15K
         vm.prank(oracleReporter);
         vaultA.reportEvent(1);
 
         uint256 assetsAfter = vaultA.totalAssets();
         assertLt(assetsAfter, assetsBefore, "NAV should drop by $15K claim");
 
-        // Non-reporter cannot trigger
+        // Non-reporter cannot trigger (already claimed anyway)
         vm.prank(investor);
         vm.expectRevert();
-        vaultA.reportEvent(1); // Already claimed anyway
+        vaultA.reportEvent(1);
 
-        // Insurer exercises
-        vm.prank(insurer);
-        vaultA.exerciseClaim(0);
-
+        // Insurer already received USDC via auto-exercise -- no manual exerciseClaim needed
         uint256 insurerBal = usdc.balanceOf(insurer);
         assertEq(insurerBal, 15_000e6);
+
+        // Verify auto-exercise state
+        assertEq(vaultA.totalPendingClaims(), 0);
+        ClaimReceipt.Receipt memory receipt = claimReceipt.getReceipt(0);
+        assertTrue(receipt.exercised);
     }
 
     // =========== HP4: COMMERCIAL FIRE (PARTIAL) ===========
 
     function test_commercialFirePartialClaim() public {
-        // Setup
+        // Setup: Investor deposits $40K into Vault A
+        // Vault A balance = $40K + $6.1K premiums = $46.1K > $35K claim = AUTO-EXERCISE
         vm.startPrank(investor);
         usdc.approve(address(vaultA), 40_000e6);
         vaultA.deposit(40_000e6, investor);
@@ -256,12 +270,14 @@ contract FullFlowTest is Test {
         vm.expectRevert();
         vaultB.submitClaim(2, 35_000e6);
 
-        // Exercise
-        vm.prank(insurer);
-        vaultA.exerciseClaim(0);
-
+        // Insurer already received USDC via auto-exercise
         uint256 insurerBal = usdc.balanceOf(insurer);
         assertEq(insurerBal, 35_000e6);
+
+        // Verify auto-exercise state
+        assertEq(vaultA.totalPendingClaims(), 0);
+        ClaimReceipt.Receipt memory receipt = claimReceipt.getReceipt(0);
+        assertTrue(receipt.exercised);
     }
 
     // =========== HP5: FULL DEMO FLOW ===========
@@ -291,20 +307,26 @@ contract FullFlowTest is Test {
         oracle.setBtcPrice(75_000e8);
 
         // 2:10 -- Trigger P1 on Vault A
+        // Vault A balance ~= $10K + $6.1K = $16.1K < $50K = SHORTFALL
         vaultA.checkClaim(0);
 
         // 2:20 -- Trigger P1 on Vault B
+        // Vault B balance ~= $5K + $3.7K = $8.7K < $50K = SHORTFALL
         vaultB.checkClaim(0);
 
-        // 2:40 -- Insurer exercises Vault A receipt
+        // Both are shortfall -- manual exercise needed
+        assertEq(vaultA.totalPendingClaims(), 50_000e6);
+        assertEq(vaultB.totalPendingClaims(), 50_000e6);
+
+        // 2:40 -- Insurer exercises Vault A receipt (capped at balance)
         vm.prank(insurer);
         vaultA.exerciseClaim(0);
 
-        // Exercise Vault B receipt
+        // Exercise Vault B receipt (capped at balance)
         vm.prank(insurer);
         vaultB.exerciseClaim(1);
 
-        // Insurer received USDC from both vaults
+        // Insurer received USDC from both vaults (capped at each vault's balance)
         uint256 insurerBal = usdc.balanceOf(insurer);
         assertGt(insurerBal, 0);
 
@@ -313,12 +335,17 @@ contract FullFlowTest is Test {
         (,,,,bool claimedB,) = vaultB.vaultPolicies(0);
         assertTrue(claimedA);
         assertTrue(claimedB);
+
+        // Pending claims resolved after exercise
+        assertEq(vaultA.totalPendingClaims(), 0);
+        assertEq(vaultB.totalPendingClaims(), 0);
     }
 
     // =========== MULTIPLE CLAIMS SEQUENTIAL ===========
 
     function test_multipleClaimsSequential() public {
         // Setup: larger deposit to absorb multiple claims
+        // Vault A balance = $40K + $6.1K premiums = $46.1K
         vm.startPrank(investor);
         usdc.approve(address(vaultA), 40_000e6);
         vaultA.deposit(40_000e6, investor);
@@ -328,37 +355,42 @@ contract FullFlowTest is Test {
         vm.prank(admin);
         registry.advanceTime(15 days);
 
-        // Trigger P2 (flight delay): $15K
+        // Trigger P2 (flight delay): $15K claim
+        // Vault balance = $46.1K > $15K = AUTO-EXERCISE
         vm.prank(admin);
         oracle.setFlightStatus(true);
         vm.prank(oracleReporter);
         vaultA.reportEvent(1);
 
-        uint256 pendingAfterP2 = vaultA.totalPendingClaims();
-        assertEq(pendingAfterP2, 15_000e6);
+        // P2 auto-exercised: pendingClaims = 0, insurer received $15K
+        assertEq(vaultA.totalPendingClaims(), 0);
+        uint256 insurerBalAfterP2 = usdc.balanceOf(insurer);
+        assertEq(insurerBalAfterP2, 15_000e6);
 
-        // Trigger P3 (fire): $35K partial
+        // Trigger P3 (fire): $35K partial claim
+        // Vault balance = $46.1K - $15K = $31.1K < $35K = SHORTFALL
         vm.prank(insurerAdmin);
         vaultA.submitClaim(2, 35_000e6);
 
-        uint256 pendingAfterBoth = vaultA.totalPendingClaims();
-        assertEq(pendingAfterBoth, 50_000e6); // $15K + $35K
+        uint256 pendingAfterP3 = vaultA.totalPendingClaims();
+        assertEq(pendingAfterP3, 35_000e6); // P3 shortfall
 
         // totalAssets should reflect cumulative impact
         uint256 assets = vaultA.totalAssets();
-        // With $40K deposit + $6.1K premiums in vault, minus $50K pending claims
-        // and some earned premiums, totalAssets should be very low
+        // Vault balance ~= $31.1K, pending claims = $35K
+        // totalAssets should be very low or zero
         assertLt(assets, 5_000e6);
 
-        // Exercise both claims
+        // Exercise P3 manually (payout capped at vault balance)
         vm.prank(insurer);
-        vaultA.exerciseClaim(0); // P2 receipt
-
-        vm.prank(insurer);
-        vaultA.exerciseClaim(1); // P3 receipt
+        vaultA.exerciseClaim(1); // P3 receipt (receipt ID 1, since P2 was receipt 0)
 
         // All pending claims resolved
         assertEq(vaultA.totalPendingClaims(), 0);
+
+        // Insurer received capped amount for P3
+        uint256 insurerBalFinal = usdc.balanceOf(insurer);
+        assertGt(insurerBalFinal, insurerBalAfterP2); // Got something for P3
     }
 
     // =========== POLICY EXPIRY ===========
@@ -415,6 +447,14 @@ contract FullFlowTest is Test {
         assertEq(vaultB.bufferRatioBps(), 1500);
         assertEq(vaultA.managementFeeBps(), 50);
         assertEq(vaultB.managementFeeBps(), 100);
+    }
+
+    // =========== AUTO-REGISTER MINTER VIA FACTORY ===========
+
+    function test_factoryAutoRegistersMinters() public view {
+        // Verify that factory auto-registered both vaults as ClaimReceipt minters
+        assertTrue(claimReceipt.authorizedMinters(address(vaultA)));
+        assertTrue(claimReceipt.authorizedMinters(address(vaultB)));
     }
 
     // =========== FEE COMPARISON ===========

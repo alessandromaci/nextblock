@@ -37,6 +37,9 @@ contract VaultFactoryTest is Test {
             address(claimReceipt)
         );
 
+        // Set factory as registrar so it can auto-register minters on createVault
+        claimReceipt.setRegistrar(address(factory));
+
         vm.stopPrank();
     }
 
@@ -71,7 +74,26 @@ contract VaultFactoryTest is Test {
         assertEq(v.vaultManager(), managerA);
         assertEq(v.bufferRatioBps(), 2000);
         assertEq(v.managementFeeBps(), 50);
-        assertEq(v.owner(), admin); // Owner is factory owner, not factory
+        assertEq(v.owner(), admin); // Owner is msg.sender (admin called via prank)
+    }
+
+    function test_createVault_permissionless() public {
+        // Anyone can create a vault; vault owner = msg.sender
+        vm.prank(notAdmin);
+        address vault = factory.createVault(
+            "Community Vault",
+            "nxbCOM",
+            "Community",
+            managerA,
+            2000,
+            50
+        );
+
+        assertTrue(vault != address(0));
+        assertTrue(factory.isVault(vault));
+
+        InsuranceVault v = InsuranceVault(vault);
+        assertEq(v.owner(), notAdmin); // Vault owner is the caller (notAdmin), not factory owner
     }
 
     function test_createVault_multiple() public {
@@ -99,13 +121,32 @@ contract VaultFactoryTest is Test {
         assertEq(vaults[1], vaultBAddr);
     }
 
-    function test_createVault_onlyOwner() public {
-        vm.prank(notAdmin);
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, notAdmin));
-        factory.createVault(
-            "Test", "TEST", "Test Vault",
+    function test_createVault_autoRegistersMinter() public {
+        // Factory auto-calls claimReceipt.setAuthorizedMinter(vault, true) inside createVault
+        vm.prank(admin);
+        address vault = factory.createVault(
+            "NextBlock Balanced Core", "nxbBAL", "Balanced Core",
             managerA, 2000, 50
         );
+
+        // Verify the vault is registered as an authorized minter on ClaimReceipt
+        assertTrue(claimReceipt.authorizedMinters(vault));
+    }
+
+    function test_createVault_registrarCanAddMinter() public {
+        // Verify that factory (as registrar) can add minters but non-registrar cannot
+        // First, a non-admin/non-registrar address creates a vault -- factory is registrar so it works
+        vm.prank(notAdmin);
+        address vault = factory.createVault(
+            "Test Vault", "TEST", "Test",
+            managerA, 2000, 50
+        );
+
+        // Vault should be auto-registered as minter via the registrar role
+        assertTrue(claimReceipt.authorizedMinters(vault));
+
+        // Verify registrar address is the factory
+        assertEq(claimReceipt.registrar(), address(factory));
     }
 
     function test_createVault_invalidManager() public {

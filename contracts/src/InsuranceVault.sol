@@ -52,6 +52,7 @@ contract InsuranceVault is ERC4626, Ownable, ReentrancyGuard {
     address public vaultManager;
     address public oracleReporter;
     address public insurerAdmin;
+    mapping(address => bool) public authorizedPremiumDepositors;
 
     // --- References ---
     PolicyRegistry public registry;
@@ -62,12 +63,14 @@ contract InsuranceVault is ERC4626, Ownable, ReentrancyGuard {
     event PolicyAdded(uint256 indexed policyId, uint256 allocationWeight);
     event PremiumDeposited(uint256 indexed policyId, uint256 amount);
     event ClaimTriggered(uint256 indexed policyId, uint256 amount, address insurer, uint256 receiptId);
+    event ClaimAutoExercised(uint256 indexed receiptId, uint256 payout, address insurer);
     event ClaimExercised(uint256 indexed receiptId, uint256 payout, address insurer);
-    event ClaimShortfall(uint256 indexed receiptId, uint256 claimAmount, uint256 payout);
+    event ClaimShortfall(uint256 indexed receiptId, uint256 claimAmount, uint256 vaultBalance);
     event PolicyExpired(uint256 indexed policyId);
     event FeesCollected(address indexed recipient, uint256 amount);
     event OracleReporterUpdated(address indexed reporter);
     event InsurerAdminUpdated(address indexed admin);
+    event PremiumDepositorUpdated(address indexed depositor, bool authorized);
 
     // --- Errors ---
     error InsuranceVault__PolicyNotActive(uint256 policyId);
@@ -239,10 +242,14 @@ contract InsuranceVault is ERC4626, Ownable, ReentrancyGuard {
         emit PolicyAdded(policyId, weightBps);
     }
 
-    /// @notice Deposit premium USDC for a policy already added to the vault. Only owner.
+    /// @notice Deposit premium USDC for a policy already added to the vault.
+    ///         Only owner or authorized premium depositors.
     /// @param policyId The policy to fund
     /// @param amount Premium amount in USDC (6 decimals)
-    function depositPremium(uint256 policyId, uint256 amount) external onlyOwner checkExpiredPolicies {
+    function depositPremium(uint256 policyId, uint256 amount) external checkExpiredPolicies {
+        if (msg.sender != owner() && !authorizedPremiumDepositors[msg.sender]) {
+            revert InsuranceVault__UnauthorizedCaller(msg.sender);
+        }
         if (!policyAdded[policyId]) revert InsuranceVault__PolicyNotInVault(policyId);
         if (amount == 0) revert InsuranceVault__InvalidParams();
 
@@ -261,7 +268,7 @@ contract InsuranceVault is ERC4626, Ownable, ReentrancyGuard {
     /// @notice Permissionless on-chain claim trigger (P1: BTC Price Protection).
     ///         Anyone can call. Reads oracle price and auto-triggers if below threshold.
     /// @param policyId The policy to check
-    function checkClaim(uint256 policyId) external checkExpiredPolicies {
+    function checkClaim(uint256 policyId) external nonReentrant checkExpiredPolicies {
         VaultPolicy storage vp = _validateClaimPreconditions(policyId);
 
         // Verify this is an ON_CHAIN policy
@@ -285,7 +292,7 @@ contract InsuranceVault is ERC4626, Ownable, ReentrancyGuard {
     /// @notice Oracle reporter claim trigger (P2: Flight Delay).
     ///         Only oracle reporter can call. Reads oracle and verifies condition.
     /// @param policyId The policy to check
-    function reportEvent(uint256 policyId) external onlyOracleReporter checkExpiredPolicies {
+    function reportEvent(uint256 policyId) external onlyOracleReporter nonReentrant checkExpiredPolicies {
         VaultPolicy storage vp = _validateClaimPreconditions(policyId);
 
         // Verify this is an ORACLE_DEPENDENT policy
@@ -307,7 +314,7 @@ contract InsuranceVault is ERC4626, Ownable, ReentrancyGuard {
     ///         Only insurer admin can call. Partial claims allowed.
     /// @param policyId The policy to submit a claim for
     /// @param amount Assessed claim amount (can be less than coverage)
-    function submitClaim(uint256 policyId, uint256 amount) external onlyInsurerAdmin checkExpiredPolicies {
+    function submitClaim(uint256 policyId, uint256 amount) external onlyInsurerAdmin nonReentrant checkExpiredPolicies {
         VaultPolicy storage vp = _validateClaimPreconditions(policyId);
 
         // Verify this is an OFF_CHAIN policy
@@ -389,6 +396,12 @@ contract InsuranceVault is ERC4626, Ownable, ReentrancyGuard {
     function setInsurerAdmin(address admin) external onlyOwner {
         insurerAdmin = admin;
         emit InsurerAdminUpdated(admin);
+    }
+
+    /// @notice Set or revoke premium depositor authorization. Only owner.
+    function setAuthorizedPremiumDepositor(address depositor, bool authorized) external onlyOwner {
+        authorizedPremiumDepositors[depositor] = authorized;
+        emit PremiumDepositorUpdated(depositor, authorized);
     }
 
     // --- Fee Management ---
@@ -521,7 +534,9 @@ contract InsuranceVault is ERC4626, Ownable, ReentrancyGuard {
         return vp;
     }
 
-    /// @dev Process a claim: update state, mint receipt, emit event.
+    /// @dev Process a claim: update state, mint receipt, attempt auto-exercise.
+    ///      If vault has sufficient USDC, auto-exercises in the same tx.
+    ///      Otherwise defers to manual exerciseClaim() (receipt stays live).
     function _processClaim(uint256 policyId, uint256 amount, address insurer) internal {
         _accrueFeesInternal();
 
@@ -535,6 +550,31 @@ contract InsuranceVault is ERC4626, Ownable, ReentrancyGuard {
         uint256 receiptId = claimReceipt.mint(insurer, policyId, amount, address(this));
 
         emit ClaimTriggered(policyId, amount, insurer, receiptId);
+
+        // --- Auto-exercise if vault has sufficient funds ---
+        uint256 balance = IERC20(asset()).balanceOf(address(this));
+        if (balance >= amount) {
+            // Sufficient funds: auto-exercise in same tx
+            totalPendingClaims -= amount;
+
+            // Reduce deployed capital (floor at 0)
+            if (amount >= totalDeployedCapital) {
+                totalDeployedCapital = 0;
+            } else {
+                totalDeployedCapital -= amount;
+            }
+
+            // Mark exercised on ClaimReceipt (sets exercised=true AND burns NFT)
+            claimReceipt.markExercised(receiptId);
+
+            // Transfer USDC to insurer
+            IERC20(asset()).safeTransfer(insurer, amount);
+
+            emit ClaimAutoExercised(receiptId, amount, insurer);
+        } else {
+            // Shortfall: defer to manual exerciseClaim()
+            emit ClaimShortfall(receiptId, amount, balance);
+        }
     }
 
     /// @dev Calculate total unearned premiums across all policies.

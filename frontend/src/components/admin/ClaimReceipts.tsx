@@ -15,8 +15,8 @@ export function ClaimReceipts() {
   const { receipts, isLoading } = useAllReceipts(receiptCount);
   const exerciseClaim = useExerciseClaim();
 
-  const outstanding = receipts.filter((r) => !r.exercised);
-  const exercised = receipts.filter((r) => r.exercised);
+  const pending = receipts.filter((r) => !r.exercised);
+  const settled = receipts.filter((r) => r.exercised);
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-6">
@@ -24,8 +24,8 @@ export function ClaimReceipts() {
         Claim Receipts
       </h3>
       <p className="mb-4 text-xs text-gray-500">
-        Soulbound ERC-721 tokens representing draw-down rights. Exercise to
-        withdraw USDC.
+        Soulbound ERC-721 tokens representing draw-down rights. Claims
+        auto-settle when the vault has sufficient funds.
       </p>
 
       {isLoading ? (
@@ -40,14 +40,26 @@ export function ClaimReceipts() {
         </p>
       ) : (
         <div className="space-y-4">
-          {/* Outstanding receipts */}
-          {outstanding.length > 0 && (
+          {/* Info banner when all claims are auto-settled */}
+          {pending.length === 0 && settled.length > 0 && (
+            <div className="rounded-lg border border-emerald-100 bg-emerald-50 p-3">
+              <p className="text-xs font-medium text-emerald-700">
+                All claims auto-settled -- no pending receipts.
+              </p>
+            </div>
+          )}
+
+          {/* Pending (Shortfall) receipts */}
+          {pending.length > 0 && (
             <div>
-              <h4 className="mb-2 text-xs font-medium uppercase tracking-wider text-gray-400">
-                Outstanding ({outstanding.length})
+              <h4 className="mb-1 text-xs font-medium uppercase tracking-wider text-amber-600">
+                Pending / Shortfall ({pending.length})
               </h4>
+              <p className="mb-2 text-xs text-gray-400">
+                These claims need manual settlement due to insufficient vault funds at trigger time.
+              </p>
               <div className="space-y-2">
-                {outstanding.map((receipt) => (
+                {pending.map((receipt) => (
                   <div
                     key={Number(receipt.receiptId)}
                     className="flex items-center justify-between rounded-lg border border-amber-100 bg-amber-50 p-3"
@@ -58,7 +70,7 @@ export function ClaimReceipts() {
                           Receipt #{Number(receipt.receiptId)}
                         </span>
                         <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700">
-                          Pending
+                          Shortfall
                         </span>
                       </div>
                       <div className="mt-1 flex items-center gap-3 text-xs text-gray-500">
@@ -89,25 +101,25 @@ export function ClaimReceipts() {
             </div>
           )}
 
-          {/* Exercised receipts */}
-          {exercised.length > 0 && (
+          {/* Settled receipts */}
+          {settled.length > 0 && (
             <div>
               <h4 className="mb-2 text-xs font-medium uppercase tracking-wider text-gray-400">
-                Exercised ({exercised.length})
+                Settled ({settled.length})
               </h4>
               <div className="space-y-2">
-                {exercised.map((receipt) => (
+                {settled.map((receipt) => (
                   <div
                     key={Number(receipt.receiptId)}
-                    className="flex items-center justify-between rounded-lg border border-gray-100 bg-gray-50 p-3"
+                    className="flex items-center justify-between rounded-lg border border-emerald-100 bg-emerald-50/50 p-3"
                   >
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-400 line-through">
+                        <span className="text-sm font-medium text-gray-500">
                           Receipt #{Number(receipt.receiptId)}
                         </span>
-                        <span className="rounded bg-gray-200 px-1.5 py-0.5 text-xs text-gray-500">
-                          Exercised
+                        <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-xs text-emerald-700">
+                          Settled
                         </span>
                       </div>
                       <div className="mt-1 flex items-center gap-3 text-xs text-gray-400">

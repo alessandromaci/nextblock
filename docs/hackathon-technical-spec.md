@@ -28,7 +28,7 @@ All architectural decisions have been confirmed by Alessandro before build start
 
 ### D1: Claim Triggers Live on InsuranceVault -- CONFIRMED
 
-All three claim trigger paths (`checkClaim`, `reportEvent`, `submitClaim`) are methods on `InsuranceVault`. The vault reads policy data from PolicyRegistry and oracle data from MockOracle, then processes claims internally. PolicyRegistry is a pure data store.
+All three claim trigger paths (`checkClaim`, `reportEvent`, `submitClaim`) are methods on `InsuranceVault`, all protected by `nonReentrant` (auto-exercise performs `safeTransfer` inside triggers). The vault reads policy data from PolicyRegistry and oracle data from MockOracle, then processes claims internally. PolicyRegistry is a pure data store.
 
 ### D2: Shared Policy Full Independence -- CONFIRMED
 
@@ -64,7 +64,7 @@ Two wallets: Wallet 1 = admin + vault managers + oracle reporter + insurer (all 
 | #    | Question                                                                                                                          | Recommendation                                                                                                                                                                                                                                                                                                 | Owner |
 | ---- | --------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
 | OQ-1 | Where does `timeOffset` live? Design doc 11.5.5 puts it on each vault. Marco recommends PolicyRegistry as single source of truth. | **PolicyRegistry** -- avoids time drift between vaults. One `advanceTime()` call advances all vaults simultaneously.                                                                                                                                                                                           | Marco |
-| OQ-2 | Does `addPolicy` bundle the premium USDC transfer? Or are they two separate calls?                                                | **Separate calls**: `addPolicy(policyId, weight)` by vault manager, then `depositPremium(policyId, amount)` by admin. Different roles, different calls. Cleaner separation of concerns. Deploy script batches them sequentially.                                                                               | Marco |
+| OQ-2 | Does `addPolicy` bundle the premium USDC transfer? Or are they two separate calls?                                                | **Separate calls**: `addPolicy(policyId, weight)` by vault manager, then `depositPremium(policyId, amount)` by owner or authorized premium depositor. Different roles, different calls. Cleaner separation of concerns. Deploy script batches them sequentially.                                                                               | Marco |
 | OQ-3 | Where does `exerciseClaim` live? On ClaimReceipt or InsuranceVault?                                                               | **InsuranceVault**: `vault.exerciseClaim(receiptId)`. The vault holds the USDC and needs to update its internal accounting (`totalPendingClaims`, `totalDeployedCapital`). ClaimReceipt is a passive token.                                                                                                    | Marco |
 | OQ-4 | How does `_accruedFees()` avoid circularity with `totalAssets()`?                                                                 | **Pre-fee basis**: Compute `preFeeAssets = balance - unearned - pending` first, then derive fees from that value. `fee = preFeeAssets * feeBps * elapsed / (10000 * 365 days)`. Slightly overcharges but negligible at 0.5-1% annual. Track `accumulatedFees` + `lastFeeTimestamp`, snapshot on state changes. | Marco |
 
@@ -229,7 +229,7 @@ PolicyRegistry (standalone -- time management + policy data store)
 InsuranceVault (reads PolicyRegistry + MockOracle, holds MockUSDC, mints ClaimReceipt)
     ^
     |
-VaultFactory (deploys InsuranceVault instances, registers minters in ClaimReceipt)
+VaultFactory (deploys InsuranceVault instances, auto-registers minters via registrar role)
     |
 ClaimReceipt (ERC-721, minted by InsuranceVault, burned on exercise)
 ```
@@ -356,14 +356,18 @@ contract InsuranceVault is ERC4626, Ownable, ReentrancyGuard {
 
     // Policy management
     function addPolicy(uint256 policyId, uint256 weightBps) external;   // onlyVaultManager
-    function depositPremium(uint256 policyId, uint256 amount) external; // onlyOwner, calls transferFrom
+    function depositPremium(uint256 policyId, uint256 amount) external; // owner or authorizedPremiumDepositor, calls transferFrom
 
-    // Claim triggers (3 distinct paths)
-    function checkClaim(uint256 policyId) external;                     // Permissionless (P1)
-    function reportEvent(uint256 policyId) external;                    // onlyOracleReporter (P2)
-    function submitClaim(uint256 policyId, uint256 amount) external;    // onlyInsurerAdmin (P3)
+    // Premium depositor delegation
+    mapping(address => bool) public authorizedPremiumDepositors;
+    function setAuthorizedPremiumDepositor(address depositor, bool authorized) external; // onlyOwner
 
-    // Claim settlement
+    // Claim triggers (3 distinct paths) -- all nonReentrant (auto-exercise does safeTransfer)
+    function checkClaim(uint256 policyId) external nonReentrant;        // Permissionless (P1)
+    function reportEvent(uint256 policyId) external nonReentrant;       // onlyOracleReporter (P2)
+    function submitClaim(uint256 policyId, uint256 amount) external nonReentrant; // onlyInsurerAdmin (P3)
+
+    // Claim settlement (fallback for shortfall cases only)
     function exerciseClaim(uint256 receiptId) external nonReentrant;
     // Caller must be receipt.insurer (soulbound NFT -- non-transferable)
 
@@ -415,13 +419,13 @@ error InsuranceVault__OracleConditionNotMet(uint256 policyId);
 error InsuranceVault__InvalidReceipt(uint256 receiptId);
 error InsuranceVault__InvalidParams();
 error InsuranceVault__NoFeesToClaim();
-error InsuranceVault__ClaimShortfall(uint256 receiptId, uint256 claimAmount, uint256 payout);
+error InsuranceVault__ClaimShortfall(uint256 receiptId, uint256 claimAmount, uint256 vaultBalance);
 ```
 
 #### VaultFactory
 
 ```solidity
-contract VaultFactory is Ownable {
+contract VaultFactory {
     // Infrastructure addresses (set once at deployment, shared by all vaults)
     address public immutable asset;           // MockUSDC
     address public immutable policyRegistry;
@@ -434,6 +438,7 @@ contract VaultFactory is Ownable {
     constructor(address asset_, address policyRegistry_, address oracle_, address claimReceipt_);
 
     // Vault-specific params only -- infrastructure is hardcoded
+    // PERMISSIONLESS: anyone can create a vault. msg.sender becomes vault owner.
     function createVault(
         string memory name,         // share token name, e.g. "NextBlock Balanced Core"
         string memory symbol,       // share token symbol, e.g. "nxbBAL"
@@ -441,8 +446,10 @@ contract VaultFactory is Ownable {
         address vaultManager,
         uint256 bufferRatioBps,
         uint256 managementFeeBps
-    ) external onlyOwner returns (address vault);
-    // NOTE: Does NOT auto-register minter. Admin must call ClaimReceipt.setAuthorizedMinter(vault, true) separately.
+    ) external returns (address vault);
+    // NOTE: Factory auto-registers the new vault as an authorized minter in ClaimReceipt
+    // (factory must be set as registrar on ClaimReceipt via setRegistrar).
+    // msg.sender becomes the vault owner (not factory owner).
 
     function getVaults() external view returns (address[] memory);
     function getVaultCount() external view returns (uint256);
@@ -486,9 +493,11 @@ contract ClaimReceipt is ERC721, Ownable {
 
 **Authorization**: `mapping(address => bool) public authorizedMinters` -- maintained by owner via `setAuthorizedMinter(address, bool)`.
 
-**Custom errors**: `ClaimReceipt__UnauthorizedMinter(address caller)`, `ClaimReceipt__NonTransferable()`, `ClaimReceipt__AlreadyExercised(uint256 receiptId)`, `ClaimReceipt__ReceiptNotFound(uint256 receiptId)`, `ClaimReceipt__OnlyIssuingVault(uint256 receiptId, address caller, address vault)`
+**Registrar role**: `address public registrar` -- a single address (typically VaultFactory) that can ADD authorized minters but cannot revoke them. Owner retains full add/revoke control. Set via `setRegistrar(address)` (onlyOwner).
 
-**Events**: `MinterUpdated(address indexed minter, bool authorized)`, `ReceiptMinted(uint256 indexed receiptId, address indexed insurer, uint256 policyId, uint256 claimAmount, address vault)`, `ReceiptExercised(uint256 indexed receiptId)`
+**Custom errors**: `ClaimReceipt__UnauthorizedMinter(address caller)`, `ClaimReceipt__NonTransferable()`, `ClaimReceipt__AlreadyExercised(uint256 receiptId)`, `ClaimReceipt__ReceiptNotFound(uint256 receiptId)`, `ClaimReceipt__OnlyIssuingVault(uint256 receiptId, address caller, address vault)`, `ClaimReceipt__UnauthorizedRegistrar(address caller)`
+
+**Events**: `MinterUpdated(address indexed minter, bool authorized)`, `ReceiptMinted(uint256 indexed receiptId, address indexed insurer, uint256 policyId, uint256 claimAmount, address vault)`, `ReceiptExercised(uint256 indexed receiptId)`, `RegistrarUpdated(address indexed registrar)`
 
 ### 4.3 Key Implementation Details
 
@@ -600,10 +609,9 @@ Phase 1: Deploy standalone contracts
 
 Phase 2: Deploy factory + vaults
   5. Deploy VaultFactory(MockUSDC, PolicyRegistry, MockOracle, ClaimReceipt)
-  6. Create Vault A via factory (bufferRatio=2000, fee=50)
-  7. Create Vault B via factory (bufferRatio=1500, fee=100)
-  8. ClaimReceipt.setAuthorizedMinter(vaultA, true)
-  9. ClaimReceipt.setAuthorizedMinter(vaultB, true)
+  6. ClaimReceipt.setRegistrar(address(factory))  // factory can auto-register minters
+  7. Create Vault A via factory (bufferRatio=2000, fee=50)  // factory auto-registers vault as minter
+  8. Create Vault B via factory (bufferRatio=1500, fee=100) // factory auto-registers vault as minter
 
 Phase 3: Register policies (two-step: register then activate)
   10. PolicyRegistry.registerPolicy(P1: BTC, ON_CHAIN, $50K, $2.5K, 90d, threshold=80000e8)
@@ -634,11 +642,13 @@ event PolicyAdded(uint256 indexed policyId, uint256 allocationWeight);
 event PremiumDeposited(uint256 indexed policyId, uint256 amount);
 event ClaimTriggered(uint256 indexed policyId, uint256 amount, address insurer, uint256 receiptId);
 event ClaimExercised(uint256 indexed receiptId, uint256 amount, address insurer);
-event ClaimShortfall(uint256 indexed receiptId, uint256 claimAmount, uint256 actualPayout);
+event ClaimAutoExercised(uint256 indexed receiptId, uint256 payout, address insurer);
+event ClaimShortfall(uint256 indexed receiptId, uint256 claimAmount, uint256 vaultBalance);
 event PolicyExpired(uint256 indexed policyId);
 event FeesCollected(address indexed recipient, uint256 amount);
 event OracleReporterUpdated(address indexed reporter);
 event InsurerAdminUpdated(address indexed admin);
+event PremiumDepositorUpdated(address indexed depositor, bool authorized);
 
 // PolicyRegistry events:
 event PolicyRegistered(uint256 indexed policyId, string name);
@@ -647,6 +657,7 @@ event TimeAdvanced(uint256 newTimestamp, uint256 secondsAdded);
 
 // ClaimReceipt events:
 event MinterUpdated(address indexed minter, bool authorized);
+event RegistrarUpdated(address indexed registrar);
 event ReceiptMinted(uint256 indexed receiptId, address indexed insurer, uint256 policyId, uint256 claimAmount, address vault);
 event ReceiptExercised(uint256 indexed receiptId);
 
@@ -687,7 +698,7 @@ MockOracle              |       |           |            |         |          |
 ------------------------+-------+-----------+------------+---------+----------+--------
 InsuranceVault          |       |           |            |         |          |
   addPolicy             |       |     X     |            |         |          |
-  depositPremium        |   X   |           |            |         |          |
+  depositPremium        |   X   |           |            |         |          |  (+ authorizedPremiumDepositors)
   setOracleReporter     |   X   |           |            |         |          |
   setInsurerAdmin       |   X   |           |            |         |          |
   checkClaim (P1)       |   X   |     X     |     X      |    X    |    X     |   X
@@ -697,6 +708,8 @@ InsuranceVault          |       |           |            |         |          |
   deposit / withdraw    |   X   |     X     |     X      |    X    |    X     |   X
 ------------------------+-------+-----------+------------+---------+----------+--------
 ClaimReceipt            |       |           |            |         |          |
+  setRegistrar          |   X   |           |            |         |          |
+  setAuthorizedMinter   |   X   | (registrar can ADD only) |         |          |
   mint / markExercised  | (only callable by authorized InsuranceVault contracts)  |
   getReceipt (read)     |   X   |     X     |     X      |    X    |    X     |   X
 
@@ -738,7 +751,8 @@ Note: If a claim triggers while the investor holds shares, they observe the impa
 ACTION          PAGE / COMPONENT                 CONTRACT CALLS                        STATE CHANGES
 ------          ----------------                 --------------                        -------------
 DEPLOY          (deploy script)                  Deploy 6 contracts (Section 4.4)      Contracts live
-                                                 factory.createVault() x2              2 vaults registered
+                                                 claimReceipt.setRegistrar(factory)    Factory can register minters
+                                                 factory.createVault() x2              2 vaults (auto-registered as minters)
 
 REGISTER        Admin (/admin)                   registry.registerPolicy(              3 policies created
 POLICIES        PolicyPool section                 P1: BTC, ON_CHAIN, $50K, $2.5K,     Status: REGISTERED
@@ -818,16 +832,16 @@ RECEIPT         checkClaim or reportEvent)                                      
 VIEW            Admin (/admin)                   claimReceipt.getReceipt(id)           (read only)
 RECEIPTS        ClaimReceipts section             per outstanding receipt
 
-EXERCISE        Admin (/admin)                   vault.exerciseClaim(receiptId)        pendingClaims ↓
-CLAIM           ClaimReceipts [Exercise] btn      -> validates receipt.insurer ==      receipt burned
-                                                    msg.sender (soulbound)             USDC -> insurer
-                                                                                      NAV: net zero
+EXERCISE        (auto at trigger time, or        vault.exerciseClaim(receiptId)        pendingClaims ↓
+CLAIM           Admin if shortfall)               -> validates receipt.insurer ==      receipt burned
+                ClaimReceipts [Exercise] btn        msg.sender (soulbound)             USDC -> insurer
+                (only needed for shortfall)                                            NAV: net zero
 
 CHECK           Discovery or Detail              vault.totalAssets()                   (read only)
 BALANCE         USDC balance display             USDC.balanceOf(insurer)
 ```
 
-Note: The insurer passively receives ClaimReceipts when P1 (permissionless) or P2 (oracle reporter) triggers fire. The insurer's unique write actions are: `submitClaim` (P3 only) and `exerciseClaim` (all receipt types). Since ClaimReceipts are soulbound, only the original insurer address can exercise.
+Note: Claims now auto-exercise when the vault has sufficient USDC. The insurer receives USDC directly at trigger time without a separate `exerciseClaim` call. If the vault has insufficient USDC (shortfall), the ClaimReceipt stays live and the insurer must manually call `exerciseClaim` later. The insurer's unique write actions are: `submitClaim` (P3 only) and `exerciseClaim` (shortfall fallback only). Since ClaimReceipts are soulbound, only the original insurer address can exercise.
 
 ### 5.7 Oracle Reporter Flow: Report Event -> Verify Impact
 
@@ -916,11 +930,13 @@ STEP    ACTION                              EXPECTED RESULT
                                             Vault B also heavily impacted
                                             → "Same event. Different vaults. Different impact."
 
-5       Insurer exercises receipt #1         vault.exerciseClaim(1):
-        on Vault A                            pendingClaims -= $50,000
-                                              USDC transferred (capped at vault balance)
-                                              Receipt #1 burned
-                                            NAV: net zero change from exercise
+5       Auto-exercise occurs in step 3/4     If vault has sufficient USDC, _processClaim
+        (or insurer manually exercises)       auto-exercises: USDC transferred, receipt burned.
+                                              If shortfall, insurer calls vault.exerciseClaim(1):
+                                                pendingClaims -= $50,000
+                                                USDC transferred (capped at vault balance)
+                                                Receipt burned
+                                              NAV: net zero change from exercise
 
 VERIFY: checkClaim is permissionless (any address can call)
 VERIFY: Both vaults trigger independently from same oracle data
@@ -949,9 +965,10 @@ STEP    ACTION                              EXPECTED RESULT
 3       Non-reporter tries                  Transaction REVERTS with
         vaultA.reportEvent(2)               InsuranceVault__UnauthorizedCaller
 
-4       Insurer exercises receipt            USDC transferred to insurer
-                                            pendingClaims -= $15,000
-                                            Receipt burned
+4       Auto-exercise occurs in step 2      If vault has sufficient USDC, auto-exercised
+        (or insurer exercises manually)       in same tx as reportEvent. Receipt burned.
+                                              If shortfall: insurer calls exerciseClaim()
+                                              pendingClaims -= $15,000
 
 VERIFY: Only oracleReporter can call reportEvent (access control)
 VERIFY: reportEvent reads oracle and validates condition (delayed == true)
@@ -983,8 +1000,9 @@ STEP    ACTION                              EXPECTED RESULT
         vaultB.submitClaim(3, ...)          InsuranceVault__PolicyNotActive
                                             (P3 is NOT in Vault B)
 
-5       Insurer exercises receipt            USDC transferred: $35,000
-                                            Receipt burned
+5       Auto-exercise occurs in step 2      If vault has sufficient USDC, auto-exercised
+        (or insurer exercises manually)       in same tx as submitClaim. USDC: $35,000.
+                                              If shortfall: insurer calls exerciseClaim()
 
 VERIFY: Only insurerAdmin can call submitClaim
 VERIFY: Partial amount ($35K < $40K coverage) accepted
@@ -1029,8 +1047,8 @@ TIME    WHO         ACTION                          KEY METRIC TO SHOW
                     checkClaim(1)                   "Same event. Both vaults hit.
                                                     Different allocation = different story."
 
-2:40    Insurer     Exercise receipt (Vault A)      USDC flows to insurer
-                    exerciseClaim(receiptId)         Receipt burned
+2:40    (auto)      Auto-exercised in step 2:10     USDC flowed to insurer at trigger time
+                    (if shortfall: exerciseClaim)     Receipt already burned
 
 3:00    Admin       Reset demo via fresh deploy      Clean slate, all state restored
                     Run DemoSetup.s.sol script       (<30s on Anvil)
@@ -1049,8 +1067,8 @@ TIME    WHO         ACTION                          KEY METRIC TO SHOW
 4:00    Insurer     Submit P3 partial ($35K)        NAV drops by another $35K
                     submitClaim(3, 35000e6)         "Two claims, cumulative impact"
 
-4:15    Insurer     Exercise both receipts          USDC flows out
-                                                    Receipts burned
+4:15    (auto)      Auto-exercised at trigger time  USDC already flowed out at 3:50 and 4:00
+                    (if shortfall: exerciseClaim)     Receipts already burned (if auto-exercised)
 
         [Switch to Wallet 2 = Investor]
 
@@ -1079,7 +1097,7 @@ TIME    WHO         ACTION                          KEY METRIC TO SHOW
 **Step 1: TRIGGER** (any of the 3 paths above)
 
 ```
-vault.checkClaim(1) / reportEvent(2) / submitClaim(3, amount)
+vault.checkClaim(1) / reportEvent(2) / submitClaim(3, amount)   [all nonReentrant]
   -> validate: not claimed, correct type, not expired
   -> (P1/P2 only) read oracle, check condition
   -> _processClaim(policyId, claimAmount):
@@ -1087,21 +1105,38 @@ vault.checkClaim(1) / reportEvent(2) / submitClaim(3, amount)
        totalPendingClaims += claimAmount
        claimReceipt.mint(insurer, policyId, claimAmount, vault)  -> ERC-721 minted
        emit ClaimTriggered(policyId, claimAmount, insurer, receiptId)
+       // AUTO-EXERCISE: attempt immediate settlement
+       if USDC.balanceOf(vault) >= claimAmount:
+         -> auto-exercise in same tx (transfer USDC, burn receipt, update accounting)
+         -> emit ClaimAutoExercised(receiptId, claimAmount, insurer)
+       else (shortfall):
+         -> defer to manual exerciseClaim() -- receipt stays live
+         -> emit ClaimShortfall(receiptId, claimAmount, USDC.balanceOf(vault))
 ```
 
-**State after trigger:**
+**State after trigger (if auto-exercise succeeds -- sufficient USDC):**
+
+| Contract        | Change                                                                                       |
+| --------------- | -------------------------------------------------------------------------------------------- |
+| InsuranceVault  | `totalPendingClaims += claimAmt` then `-= claimAmt` (net zero), `vaultPolicies[id].claimed = true` |
+| ClaimReceipt    | NFT minted then immediately burned (exercised in same tx)                                    |
+| MockUSDC        | USDC transferred from vault to insurer                                                       |
+| `totalAssets()` | Drops by `claimAmount` (balance deduction, pending claims net zero)                          |
+| Share price     | Drops proportionally                                                                         |
+
+**State after trigger (if shortfall -- insufficient USDC):**
 
 | Contract        | Change                                                               |
 | --------------- | -------------------------------------------------------------------- |
 | InsuranceVault  | `totalPendingClaims += claimAmt`, `vaultPolicies[id].claimed = true` |
-| ClaimReceipt    | New NFT minted to insurer, receipt metadata stored                   |
+| ClaimReceipt    | New NFT minted to insurer, receipt stays live for manual exercise     |
 | `totalAssets()` | Drops by `claimAmount` (pendingClaims deduction)                     |
 | Share price     | Drops proportionally                                                 |
 
-**Step 2: EXERCISE** (insurer calls, any time after trigger)
+**Step 2: EXERCISE** (fallback -- insurer calls manually, only needed for shortfall cases)
 
 ```
-vault.exerciseClaim(receiptId)                  [nonReentrant]
+vault.exerciseClaim(receiptId)                  [nonReentrant, fallback for shortfall cases]
   -> claimReceipt.getReceipt(receiptId)         [read receipt data]
   -> require receipt.vault == this vault
   -> require receipt.insurer == msg.sender     [soulbound: insurer check, not ownerOf]
@@ -1111,7 +1146,7 @@ vault.exerciseClaim(receiptId)                  [nonReentrant]
   -> totalDeployedCapital = min(totalDeployedCapital, totalDeployedCapital - claimAmount)  [floor at 0]
   -> claimReceipt.markExercised(receiptId)      [sets exercised=true AND burns NFT]
   -> USDC.transfer(msg.sender, payout)          [USDC moves to insurer, capped at balance]
-  -> if (payout < claimAmount) emit ClaimShortfall(receiptId, claimAmount, payout)
+  -> if (payout < claimAmount) emit ClaimShortfall(receiptId, claimAmount, USDC.balanceOf(vault))
   -> emit ClaimExercised(receiptId, payout, msg.sender)
 ```
 
@@ -1146,15 +1181,19 @@ REGISTERED ──[activatePolicy]──> ACTIVE         (no vault impact)
           deployed returns to buffer       receipt NFT minted
           premiums fully earned            NAV drops, accrual STOPS
                                                   |
-                                          [exerciseClaim]
-                                                  |
-                                                  v
-                                             EXERCISED
-                                                  |
-                                          pendingClaims -= amount
-                                          USDC sent to insurer
-                                          receipt burned
-                                          NAV: net zero change
+                                     +------------+------------+
+                                     |                         |
+                              [auto-exercise]          [shortfall: defer]
+                              (sufficient USDC)        (insufficient USDC)
+                                     |                         |
+                                     v                  [manual exerciseClaim]
+                                EXERCISED                      |
+                                     |                         v
+                              pendingClaims -= amount     EXERCISED
+                              USDC sent to insurer             |
+                              receipt burned             pendingClaims -= amount
+                              in same trigger tx         USDC sent (capped at balance)
+                                                         receipt burned
 ```
 
 ### 5.12 Cross-Contract Read Dependencies
@@ -1174,7 +1213,7 @@ InsuranceVault ──reads──> PolicyRegistry
     +──reads/writes──> MockUSDC
                          - balanceOf(vault) [in every totalAssets() call]
                          - transferFrom() [deposit, depositPremium]
-                         - transfer() [withdraw, exerciseClaim]
+                         - transfer() [withdraw, exerciseClaim, auto-exercise in _processClaim]
 ```
 
 ### 5.13 Frontend Event & Polling Strategy
@@ -1225,7 +1264,7 @@ LIVE DEMO:
   2:10  vaultA.checkClaim(1)                     [Anyone triggers P1 in Vault A]
   2:20  vaultB.checkClaim(1)                     [Anyone triggers P1 in Vault B]
         -> "Same claim. Vault A: -X%. Vault B: -Y%. Different strategy."
-  3:00  vaultA.exerciseClaim(receiptId)          [Insurer exercises, gets USDC]
+  3:00  (auto-exercised at 2:10 if sufficient)   [Insurer gets USDC at trigger time; manual fallback if shortfall]
   3:30  oracle.setFlightStatus(true)             [Admin sets flight delay]
   3:40  vaultA.reportEvent(2)                    [Reporter triggers P2]
   4:00  vaultA.submitClaim(3, 35_000e6)          [Insurer submits P3 partial]
@@ -1522,8 +1561,12 @@ uint256 constant NINETY_DAYS = 90 days;
 
 - `test_claimMintsReceipt`: Receipt minted to insurer on trigger
 - `test_receiptStoresInsurer`: Receipt.insurer field set correctly on mint
-- `test_exerciseClaim_transfersUSDC`: Exercise sends USDC to insurer
-- `test_exerciseClaim_burnsReceipt`: Receipt burned after exercise
+- `test_autoExercise_sufficientBalance`: Claim trigger auto-exercises when vault has enough USDC
+- `test_autoExercise_emitsClaimAutoExercised`: ClaimAutoExercised event emitted on auto-exercise
+- `test_autoExercise_burnsReceipt`: Receipt burned in same tx as trigger
+- `test_shortfall_defersToManualExercise`: ClaimShortfall emitted when vault underfunded, receipt stays live
+- `test_exerciseClaim_transfersUSDC`: Manual exercise sends USDC to insurer (shortfall fallback)
+- `test_exerciseClaim_burnsReceipt`: Receipt burned after manual exercise
 - `test_exerciseClaim_capsAtBalance`: Payout capped if vault underfunded, shortfall event emitted
 - `test_exerciseClaim_fromWrongVault_reverts`: receipt.vault != address(this) reverts
 - `test_doubleExercise_reverts`: Second exercise reverts (receipt burned)
@@ -1536,7 +1579,10 @@ uint256 constant NINETY_DAYS = 90 days;
 **Premium Deposits:**
 
 - `test_depositPremium_separate`: depositPremium is separate call from addPolicy
-- `test_depositPremium_onlyOwner`: Non-owner reverts
+- `test_depositPremium_onlyOwner`: Owner can deposit premiums
+- `test_depositPremium_authorizedDepositor`: Authorized premium depositor can deposit
+- `test_depositPremium_unauthorizedReverts`: Non-owner non-authorized reverts
+- `test_setAuthorizedPremiumDepositor_onlyOwner`: Only owner can set depositor authorization
 - `test_depositPremium_policyNotInVault_reverts`: Policy not added to vault reverts
 
 **Fee Mechanics:**
@@ -1569,8 +1615,14 @@ uint256 constant NINETY_DAYS = 90 days;
 #### VaultFactory Tests
 
 - `test_createVault`: Factory deploys vault with correct config
+- `test_createVault_permissionless`: Any address can create a vault (not just factory owner)
+- `test_createVault_callerBecomesOwner`: msg.sender becomes vault owner, not factory owner
+- `test_createVault_autoRegistersMinter`: Factory auto-registers vault as authorized minter in ClaimReceipt
 - `test_getVault`: Retrieves deployed vault address
 - `test_vaultCount`: Tracks number of vaults
+- `test_registrar_canAddMinter`: Factory (as registrar) can add minters to ClaimReceipt
+- `test_registrar_cannotRevokeMinter`: Registrar cannot revoke minters (owner-only)
+- `test_setRegistrar_onlyOwner`: Only ClaimReceipt owner can set registrar
 
 ### Integration Tests (Day 3)
 
@@ -1584,13 +1636,13 @@ uint256 constant NINETY_DAYS = 90 days;
 
 | #   | Concern                                          | Mitigation                                                                                                       |
 | --- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| S1  | **Reentrancy on exerciseClaim**                  | Use `nonReentrant` modifier (OZ ReentrancyGuard). State changes before external USDC transfer.                   |
+| S1  | **Reentrancy on claim triggers and exerciseClaim** | Use `nonReentrant` modifier on `checkClaim`, `reportEvent`, `submitClaim`, and `exerciseClaim`. Auto-exercise performs `safeTransfer` inside trigger functions, requiring reentrancy protection on all four entry points. |
 | S2  | **First-depositor inflation attack**             | Use OZ 5.x `_decimalsOffset()` override (returns 12). Virtual shares prevent manipulation.                       |
 | S3  | **totalAssets() underflow**                      | Floor at zero (`if (deductions >= balance) return 0`). Never revert.                                             |
 | S4  | **Unauthorized claim triggers**                  | Access control per path: P1 permissionless, P2 requires ORACLE_REPORTER, P3 requires INSURER_ADMIN.              |
 | S5  | **Double claim / double exercise**               | `VaultPolicy.claimed` flag prevents re-trigger. ClaimReceipt.exercised flag + burn prevents re-exercise.         |
 | S6  | **USDC approve race condition**                  | Frontend uses `approve(0)` then `approve(amount)` pattern, or set exact allowance. Not a smart contract concern. |
-| S7  | **ClaimReceipt minted by unauthorized contract** | ClaimReceipt maintains a mapping of authorized vault addresses. Only registered vaults can mint.                 |
+| S7  | **ClaimReceipt minted by unauthorized contract** | ClaimReceipt maintains a mapping of authorized vault addresses. Only registered vaults can mint. Registrar (VaultFactory) can add minters but cannot revoke -- owner retains revocation control. |
 
 ### Gas Optimization Opportunities
 
@@ -1653,7 +1705,7 @@ uint256 constant NINETY_DAYS = 90 days;
 | R6  | **Fee accrual precision** -- rounding errors accumulate over many time advances             | Low      | Use high-precision intermediate calculations. Test with many small time advances.            |
 | R7  | **wagmi v2 + Next.js 15 SSR hydration** -- server/client mismatch on wallet state           | Medium   | Use `"use client"` directive on all wallet-dependent components. Wrap in `<Suspense>`.       |
 | R8  | **Demo timing** -- live demo on Base Sepolia depends on network reliability                 | Medium   | Have Anvil local fallback ready. Frontend supports both chains via config.                   |
-| R9  | **ClaimReceipt authorization** -- vault must be registered in ClaimReceipt before minting   | Low      | Include in deployment script. Test in integration.                                           |
+| R9  | **ClaimReceipt authorization** -- vault must be registered in ClaimReceipt before minting   | Low      | Factory auto-registers via registrar role. DemoSetup sets factory as registrar before vault creation. |
 | R10 | **Time offset edge case** -- advancing time past multiple policy expiries in one call       | Medium   | Lazy expiry check handles this. But test explicitly with `advanceTime(1 year)`.              |
 
 ### Top 3 Hardest Tasks
@@ -1670,7 +1722,7 @@ uint256 constant NINETY_DAYS = 90 days;
 | ---------------------- | ------------------------------------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | `timeOffset` location  | Per-vault on InsuranceVault           | Single on PolicyRegistry                 | **PolicyRegistry** -- avoids time drift between vaults                                                                                       |
 | `_decimalsOffset()`    | Returns 12                            | Returns 6                                | **12** -- bridges USDC 6 decimals to share 18 decimals. Produces intuitive 1:1 share/USDC display (deposit $10K = ~10,000 shares at ~$1.00). |
-| `addPolicy` + premium  | Bundle into one call                  | Separate `addPolicy` + `depositPremium`  | **Separate** -- different roles (vault manager vs admin), cleaner separation                                                                 |
+| `addPolicy` + premium  | Bundle into one call                  | Separate `addPolicy` + `depositPremium`  | **Separate** -- different roles (vault manager vs owner/delegatee), cleaner separation. Premium depositor delegation enables third-party funding. |
 | `exerciseClaim` caller | Original insurer address              | `ownerOf(receiptId)` (NFT holder)        | **receipt.insurer == msg.sender** -- soulbound NFT (D3), transferability deferred to production                                              |
 | Fee circularity        | Snapshot-based (`lastSnapshotAssets`) | Pre-fee basis (`preFeeAssets` parameter) | **Pre-fee basis** -- simpler, no separate snapshot state needed                                                                              |
 | Next.js version        | 14                                    | (no opinion)                             | **15** -- Luca recommends latest with App Router                                                                                             |

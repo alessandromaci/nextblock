@@ -49,7 +49,7 @@ contract InsuranceVaultTest is Test {
         registry = new PolicyRegistry();
         claimReceipt = new ClaimReceipt();
 
-        // Deploy Vault A
+        // Deploy Vault A (direct deployment, not via factory)
         vaultA = new InsuranceVault(
             IERC20(address(usdc)),
             "NextBlock Balanced Core",
@@ -64,7 +64,7 @@ contract InsuranceVaultTest is Test {
             address(claimReceipt)
         );
 
-        // Authorize vault as ClaimReceipt minter
+        // Authorize vault as ClaimReceipt minter (manual, since not using factory)
         claimReceipt.setAuthorizedMinter(address(vaultA), true);
 
         // Set roles on vault
@@ -261,8 +261,9 @@ contract InsuranceVaultTest is Test {
         assertEq(premium2, PREMIUM_1200);
     }
 
-    function test_depositPremium_onlyOwner() public {
-        // depositPremium has onlyOwner modifier (Ownable), not our custom modifier
+    function test_depositPremium_unauthorizedCaller_reverts() public {
+        // depositPremium now checks: msg.sender == owner() || authorizedPremiumDepositors[msg.sender]
+        // "nobody" is neither owner nor authorized depositor, so it should revert
         vm.prank(nobody);
         vm.expectRevert();
         vaultA.depositPremium(0, 1_000e6);
@@ -275,11 +276,69 @@ contract InsuranceVaultTest is Test {
         vaultA.depositPremium(999, 1_000e6);
     }
 
+    function test_depositPremium_authorizedDepositor() public {
+        // Owner authorizes a depositor
+        address depositor = makeAddr("depositor");
+        vm.prank(admin);
+        vaultA.setAuthorizedPremiumDepositor(depositor, true);
+
+        // Verify authorization
+        assertTrue(vaultA.authorizedPremiumDepositors(depositor));
+
+        // Depositor can deposit premiums
+        vm.startPrank(admin);
+        usdc.mint(depositor, 1_000e6);
+        vm.stopPrank();
+
+        vm.startPrank(depositor);
+        usdc.approve(address(vaultA), 1_000e6);
+        vaultA.depositPremium(0, 1_000e6);
+        vm.stopPrank();
+
+        // Verify premium was deposited
+        (,,uint256 premium,,,) = vaultA.vaultPolicies(0);
+        assertEq(premium, PREMIUM_2500 + 1_000e6);
+    }
+
+    function test_depositPremium_unauthorizedDepositor_reverts() public {
+        // An address that is NOT owner and NOT authorized should revert
+        address unauthorized = makeAddr("unauthorized");
+        vm.startPrank(admin);
+        usdc.mint(unauthorized, 1_000e6);
+        vm.stopPrank();
+
+        vm.startPrank(unauthorized);
+        usdc.approve(address(vaultA), 1_000e6);
+        vm.expectRevert(abi.encodeWithSelector(InsuranceVault.InsuranceVault__UnauthorizedCaller.selector, unauthorized));
+        vaultA.depositPremium(0, 1_000e6);
+        vm.stopPrank();
+    }
+
+    function test_setAuthorizedPremiumDepositor() public {
+        address depositor = makeAddr("depositor");
+
+        // Only owner can set
+        vm.prank(admin);
+        vaultA.setAuthorizedPremiumDepositor(depositor, true);
+        assertTrue(vaultA.authorizedPremiumDepositors(depositor));
+
+        // Owner can revoke
+        vm.prank(admin);
+        vaultA.setAuthorizedPremiumDepositor(depositor, false);
+        assertFalse(vaultA.authorizedPremiumDepositors(depositor));
+
+        // Non-owner cannot set
+        vm.prank(nobody);
+        vm.expectRevert();
+        vaultA.setAuthorizedPremiumDepositor(depositor, true);
+    }
+
     // =========== CLAIM PATHS ===========
 
     // --- P1: On-chain (BTC Price Protection) ---
 
     function test_triggerOnChain_btcBelow() public {
+        // Vault has only premiums ($6,100). Claim is $50K. This is a shortfall case.
         vm.startPrank(investor);
         usdc.approve(address(vaultA), 10_000e6);
         vaultA.deposit(10_000e6, investor);
@@ -293,7 +352,8 @@ contract InsuranceVaultTest is Test {
         vm.prank(nobody);
         vaultA.checkClaim(0);
 
-        // Verify claim state
+        // Vault balance = $10K + $6.1K = $16.1K < $50K claim = SHORTFALL
+        // Verify claim state -- totalPendingClaims should be $50K (shortfall, not auto-exercised)
         (,,,,bool claimed,uint256 claimAmount) = vaultA.vaultPolicies(0);
         assertTrue(claimed);
         assertEq(claimAmount, COVERAGE_50K);
@@ -322,6 +382,7 @@ contract InsuranceVaultTest is Test {
     // --- P2: Oracle-dependent (Flight Delay) ---
 
     function test_triggerOracle_flightDelayed() public {
+        // Vault has only premiums ($6.1K) < $15K claim = shortfall
         vm.prank(admin);
         oracle.setFlightStatus(true);
 
@@ -331,6 +392,8 @@ contract InsuranceVaultTest is Test {
         (,,,,bool claimed, uint256 claimAmount) = vaultA.vaultPolicies(1);
         assertTrue(claimed);
         assertEq(claimAmount, COVERAGE_15K);
+        // With only $6.1K premiums in vault, $15K claim is shortfall
+        assertEq(vaultA.totalPendingClaims(), COVERAGE_15K);
     }
 
     function test_triggerOracle_onlyReporter() public {
@@ -352,6 +415,7 @@ contract InsuranceVaultTest is Test {
     // --- P3: Off-chain (Commercial Fire) ---
 
     function test_triggerOffChain_partialClaim() public {
+        // Vault has only $6.1K premiums < $35K claim = shortfall
         vm.prank(insurerAdmin);
         vaultA.submitClaim(2, 35_000e6); // $35K of $40K coverage
 
@@ -444,8 +508,114 @@ contract InsuranceVaultTest is Test {
         assertEq(receipt.insurer, insurer);
     }
 
-    function test_exerciseClaim_transfersUSDC() public {
-        // Give vault enough USDC for claim
+    // =========== AUTO-EXERCISE TESTS ===========
+
+    function test_autoExercise_sufficientFunds() public {
+        // Deposit enough USDC so vault has >= $50K for the claim
+        vm.startPrank(investor);
+        usdc.approve(address(vaultA), 60_000e6);
+        vaultA.deposit(60_000e6, investor);
+        vm.stopPrank();
+
+        // Vault balance = $60K + $6.1K premiums = $66.1K > $50K claim
+        uint256 insurerBalBefore = usdc.balanceOf(insurer);
+
+        // Trigger claim -- should auto-exercise
+        vm.prank(admin);
+        oracle.setBtcPrice(75_000e8);
+        vm.prank(nobody);
+        vaultA.checkClaim(0);
+
+        // Verify: insurer received USDC in the trigger tx (auto-exercised)
+        uint256 insurerBalAfter = usdc.balanceOf(insurer);
+        assertEq(insurerBalAfter - insurerBalBefore, COVERAGE_50K);
+
+        // Verify: totalPendingClaims is 0 (auto-exercised)
+        assertEq(vaultA.totalPendingClaims(), 0);
+
+        // Verify: receipt is exercised
+        ClaimReceipt.Receipt memory receipt = claimReceipt.getReceipt(0);
+        assertTrue(receipt.exercised);
+    }
+
+    function test_autoExercise_emitsEvent() public {
+        vm.startPrank(investor);
+        usdc.approve(address(vaultA), 60_000e6);
+        vaultA.deposit(60_000e6, investor);
+        vm.stopPrank();
+
+        vm.prank(admin);
+        oracle.setBtcPrice(75_000e8);
+
+        // Expect ClaimAutoExercised event
+        vm.expectEmit(true, false, false, true);
+        emit InsuranceVault.ClaimAutoExercised(0, COVERAGE_50K, insurer);
+
+        vm.prank(nobody);
+        vaultA.checkClaim(0);
+    }
+
+    function test_shortfall_insufficientFunds() public {
+        // Vault has only premiums ($6.1K) < $50K claim
+        vm.prank(admin);
+        oracle.setBtcPrice(75_000e8);
+
+        uint256 vaultBalance = usdc.balanceOf(address(vaultA));
+
+        // Expect ClaimShortfall event
+        vm.expectEmit(true, false, false, true);
+        emit InsuranceVault.ClaimShortfall(0, COVERAGE_50K, vaultBalance);
+
+        vm.prank(nobody);
+        vaultA.checkClaim(0);
+
+        // Verify: receipt is NOT exercised (shortfall)
+        ClaimReceipt.Receipt memory receipt = claimReceipt.getReceipt(0);
+        assertFalse(receipt.exercised);
+
+        // Verify: totalPendingClaims > 0
+        assertEq(vaultA.totalPendingClaims(), COVERAGE_50K);
+
+        // Verify: insurer did NOT receive USDC
+        assertEq(usdc.balanceOf(insurer), 0);
+    }
+
+    function test_shortfall_thenManualExercise() public {
+        // Shortfall path: vault has only $6.1K premiums < $50K claim
+        vm.prank(admin);
+        oracle.setBtcPrice(75_000e8);
+
+        vm.prank(nobody);
+        vaultA.checkClaim(0);
+
+        // Verify shortfall state
+        assertEq(vaultA.totalPendingClaims(), COVERAGE_50K);
+        ClaimReceipt.Receipt memory receipt = claimReceipt.getReceipt(0);
+        assertFalse(receipt.exercised);
+
+        // Manual exercise -- payout is capped at vault balance
+        uint256 vaultBal = usdc.balanceOf(address(vaultA));
+
+        vm.prank(insurer);
+        vaultA.exerciseClaim(0);
+
+        uint256 insurerBal = usdc.balanceOf(insurer);
+        // Should receive the vault balance, not the full claim amount
+        assertEq(insurerBal, vaultBal);
+        assertLt(insurerBal, COVERAGE_50K);
+
+        // Pending claims should be resolved
+        assertEq(vaultA.totalPendingClaims(), 0);
+
+        // Receipt should be exercised
+        ClaimReceipt.Receipt memory receiptAfter = claimReceipt.getReceipt(0);
+        assertTrue(receiptAfter.exercised);
+    }
+
+    // =========== EXERCISE CLAIM (LEGACY TESTS, UPDATED FOR AUTO-EXERCISE) ===========
+
+    function test_exerciseClaim_transfersUSDC_autoExercised() public {
+        // With $60K deposit + $6.1K premiums = $66.1K > $50K claim = AUTO-EXERCISE
         vm.startPrank(investor);
         usdc.approve(address(vaultA), 60_000e6);
         vaultA.deposit(60_000e6, investor);
@@ -454,19 +624,22 @@ contract InsuranceVaultTest is Test {
         // Trigger claim
         vm.prank(admin);
         oracle.setBtcPrice(75_000e8);
+
+        uint256 insurerBalBefore = usdc.balanceOf(insurer);
         vm.prank(nobody);
         vaultA.checkClaim(0);
 
-        // Exercise
-        uint256 insurerBalBefore = usdc.balanceOf(insurer);
-        vm.prank(insurer);
-        vaultA.exerciseClaim(0);
+        // Auto-exercise happened! Insurer received USDC in the trigger tx.
         uint256 insurerBalAfter = usdc.balanceOf(insurer);
-
         assertEq(insurerBalAfter - insurerBalBefore, COVERAGE_50K);
+
+        // Manual exerciseClaim should revert (already exercised)
+        vm.prank(insurer);
+        vm.expectRevert(abi.encodeWithSelector(InsuranceVault.InsuranceVault__InvalidReceipt.selector, 0));
+        vaultA.exerciseClaim(0);
     }
 
-    function test_exerciseClaim_burnsReceipt() public {
+    function test_exerciseClaim_burnsReceipt_autoExercised() public {
         vm.startPrank(investor);
         usdc.approve(address(vaultA), 60_000e6);
         vaultA.deposit(60_000e6, investor);
@@ -477,25 +650,27 @@ contract InsuranceVaultTest is Test {
         vm.prank(nobody);
         vaultA.checkClaim(0);
 
-        vm.prank(insurer);
-        vaultA.exerciseClaim(0);
-
-        // Receipt struct persists but is exercised
+        // Receipt was already auto-exercised
         ClaimReceipt.Receipt memory receipt = claimReceipt.getReceipt(0);
         assertTrue(receipt.exercised);
     }
 
     function test_exerciseClaim_capsAtBalance() public {
         // Vault has less USDC than claim amount (no investor deposits, only premiums)
-        // Total premiums = $6,100, claim = $50,000
+        // Total premiums = $6,100, claim = $50,000 = SHORTFALL
+        // Receipt stays live for manual exercise
 
         vm.prank(admin);
         oracle.setBtcPrice(75_000e8);
         vm.prank(nobody);
         vaultA.checkClaim(0);
 
+        // Shortfall -- receipt NOT auto-exercised
+        assertEq(vaultA.totalPendingClaims(), COVERAGE_50K);
+
         uint256 vaultBal = usdc.balanceOf(address(vaultA));
 
+        // Manual exercise -- payout is capped at vault balance
         vm.prank(insurer);
         vaultA.exerciseClaim(0);
 
@@ -518,6 +693,7 @@ contract InsuranceVaultTest is Test {
     }
 
     function test_doubleExercise_reverts() public {
+        // With enough funds, auto-exercise happens. Double exercise should revert.
         vm.startPrank(investor);
         usdc.approve(address(vaultA), 60_000e6);
         vaultA.deposit(60_000e6, investor);
@@ -528,16 +704,16 @@ contract InsuranceVaultTest is Test {
         vm.prank(nobody);
         vaultA.checkClaim(0);
 
-        vm.prank(insurer);
-        vaultA.exerciseClaim(0);
-
-        // Second exercise should revert
+        // Already auto-exercised -- manual exercise should revert
         vm.prank(insurer);
         vm.expectRevert(abi.encodeWithSelector(InsuranceVault.InsuranceVault__InvalidReceipt.selector, 0));
         vaultA.exerciseClaim(0);
     }
 
     function test_pendingClaims_reducesNAV() public {
+        // With $60K deposit, vault balance = $66.1K > $50K = AUTO-EXERCISE
+        // After auto-exercise, totalPendingClaims = 0, but NAV still drops
+        // because $50K was transferred out of the vault
         vm.startPrank(investor);
         usdc.approve(address(vaultA), 60_000e6);
         vaultA.deposit(60_000e6, investor);
@@ -552,21 +728,20 @@ contract InsuranceVaultTest is Test {
 
         uint256 assetsAfter = vaultA.totalAssets();
 
-        // NAV should drop by approximately the claim amount
+        // NAV should drop (USDC transferred out to insurer via auto-exercise)
         assertLt(assetsAfter, assetsBefore);
     }
 
     function test_exerciseClaim_restoresNAV() public {
-        vm.startPrank(investor);
-        usdc.approve(address(vaultA), 60_000e6);
-        vaultA.deposit(60_000e6, investor);
-        vm.stopPrank();
-
+        // For shortfall case: exercise is net-zero on NAV
+        // (balance drops, pendingClaims drops by same conceptual amount)
+        // Use shortfall scenario: no investor deposits, only premiums
         vm.prank(admin);
         oracle.setBtcPrice(75_000e8);
         vm.prank(nobody);
         vaultA.checkClaim(0);
 
+        // Shortfall state
         uint256 assetsAfterClaim = vaultA.totalAssets();
 
         vm.prank(insurer);
@@ -717,7 +892,7 @@ contract InsuranceVaultTest is Test {
         vm.prank(admin);
         registry.advanceTime(THIRTY_DAYS);
 
-        // Trigger P1
+        // Trigger P1 (auto-exercise since $60K + $6.1K = $66.1K > $50K)
         vm.prank(admin);
         oracle.setBtcPrice(75_000e8);
         vm.prank(nobody);

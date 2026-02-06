@@ -150,6 +150,21 @@ export function useUSDCAllowance(
 }
 
 /**
+ * Fetch total pending claims for a vault (shortfall claims awaiting manual exercise).
+ */
+export function usePendingClaims(vaultAddress: `0x${string}` | undefined) {
+  return useReadContract({
+    address: vaultAddress,
+    abi: INSURANCE_VAULT_ABI,
+    functionName: 'totalPendingClaims',
+    query: {
+      refetchInterval: POLL_INTERVAL,
+      enabled: !!vaultAddress,
+    },
+  });
+}
+
+/**
  * Preview how many shares a deposit amount would yield.
  */
 export function usePreviewDeposit(

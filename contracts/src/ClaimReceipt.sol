@@ -23,11 +23,13 @@ contract ClaimReceipt is ERC721, Ownable {
     uint256 public nextReceiptId;
     mapping(uint256 => Receipt) public receipts;
     mapping(address => bool) public authorizedMinters;
+    address public registrar; // Can add minters (but not revoke)
 
     // --- Events ---
     event ReceiptMinted(uint256 indexed receiptId, address indexed insurer, uint256 policyId, uint256 claimAmount, address vault);
     event ReceiptExercised(uint256 indexed receiptId);
     event MinterUpdated(address indexed minter, bool authorized);
+    event RegistrarUpdated(address indexed registrar);
 
     // --- Errors ---
     error ClaimReceipt__UnauthorizedMinter(address caller);
@@ -35,17 +37,34 @@ contract ClaimReceipt is ERC721, Ownable {
     error ClaimReceipt__AlreadyExercised(uint256 receiptId);
     error ClaimReceipt__ReceiptNotFound(uint256 receiptId);
     error ClaimReceipt__OnlyIssuingVault(uint256 receiptId, address caller, address vault);
+    error ClaimReceipt__UnauthorizedRegistrar(address caller);
 
     constructor() ERC721("NextBlock Claim Receipt", "NXBCR") Ownable(msg.sender) {}
 
     // --- Admin ---
 
     /// @notice Set or revoke minter authorization for a vault address.
+    ///         Owner can add or revoke. Registrar can only add (not revoke).
     /// @param minter The vault address
     /// @param authorized Whether the vault is authorized to mint
-    function setAuthorizedMinter(address minter, bool authorized) external onlyOwner {
-        authorizedMinters[minter] = authorized;
+    function setAuthorizedMinter(address minter, bool authorized) external {
+        if (msg.sender == owner()) {
+            // Owner can add or revoke
+            authorizedMinters[minter] = authorized;
+        } else if (msg.sender == registrar && authorized) {
+            // Registrar can only add, not revoke
+            authorizedMinters[minter] = true;
+        } else {
+            revert ClaimReceipt__UnauthorizedRegistrar(msg.sender);
+        }
         emit MinterUpdated(minter, authorized);
+    }
+
+    /// @notice Set the registrar address. Only owner.
+    /// @param registrar_ The new registrar (e.g., VaultFactory)
+    function setRegistrar(address registrar_) external onlyOwner {
+        registrar = registrar_;
+        emit RegistrarUpdated(registrar_);
     }
 
     // --- Mint (only authorized vaults) ---

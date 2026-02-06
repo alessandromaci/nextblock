@@ -35,9 +35,10 @@ contract ClaimReceiptTest is Test {
         assertFalse(cr.authorizedMinters(vault));
     }
 
-    function test_setAuthorizedMinter_onlyOwner() public {
+    function test_setAuthorizedMinter_onlyOwnerOrRegistrar() public {
+        // Non-owner, non-registrar cannot add minters
         vm.prank(notAuthorized);
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, notAuthorized));
+        vm.expectRevert(abi.encodeWithSelector(ClaimReceipt.ClaimReceipt__UnauthorizedRegistrar.selector, notAuthorized));
         cr.setAuthorizedMinter(vault2, true);
     }
 

@@ -3,7 +3,7 @@
 import { use } from 'react';
 import Link from 'next/link';
 import { useAccount } from 'wagmi';
-import { useVaultInfo, useUserShares, useMaxWithdraw } from '@/hooks/useVaultData';
+import { useVaultInfo, useUserShares, useMaxWithdraw, usePendingClaims } from '@/hooks/useVaultData';
 import { useVaultPolicies } from '@/hooks/useVaultPolicies';
 import { useCurrentTime } from '@/hooks/usePolicyRegistry';
 import { PolicyRow } from '@/components/vault/PolicyRow';
@@ -67,6 +67,7 @@ export default function VaultDetailPage({
   const { data: currentTime } = useCurrentTime();
   const { data: userShares } = useUserShares(vaultAddress, userAddress);
   const { data: maxWithdraw } = useMaxWithdraw(vaultAddress, userAddress);
+  const { data: pendingClaimsData } = usePendingClaims(vaultAddress);
 
   if (vaultLoading) {
     return <VaultDetailSkeleton />;
@@ -101,11 +102,7 @@ export default function VaultDetailPage({
     ? Number(userShares) * sharePrice / 1e18
     : 0;
 
-  // Pending claims: totalAssets is already net, but we need the raw pending for display
-  // We do not have a direct read for totalPendingClaims in getVaultInfo output,
-  // so we approximate or set to 0. The BufferVisualization uses raw values.
-  // For now, infer from the data available.
-  const pendingClaims = 0n; // Will be replaced when we add the dedicated read
+  const pendingClaims = pendingClaimsData ?? 0n;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
