@@ -3702,15 +3702,15 @@ export const ZERO_ADDRESSES: ChainAddresses = {
 };
 
 export const CHAIN_ADDRESSES: Record<number, ChainAddresses> = {
-  // Anvil local (DemoSetup.s.sol)
+  // Anvil local (V2 deploy - 2026-02-06)
   31337: {
-    vaultFactory: '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9',
-    policyRegistry: '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9',
-    mockUSDC: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
-    mockOracle: '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512',
-    claimReceipt: '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0',
-    // Vault A (Balanced Core): 0x856e4424f806D16E8CBC702B3c0F2ede5468eae5
-    // Vault B (DeFi Alpha):    0xb0279Db6a2F1E01fbC8483FCCef0Be2bC6299cC3
+    vaultFactory: '0xd71A4331A1c97E82e9c3b75F71a1ed64bFB1bFCD',
+    policyRegistry: '0x2cBDD9C4d978A3DA2Abd399E63fdDb94eC242126',
+    mockUSDC: '0xd3D94fde19686Eb128Da9f994Fc9Fe78ABf521Aa',
+    mockOracle: '0xb7c01385B368954573bEc08C1267FE816869D2a1',
+    claimReceipt: '0x74c27cA51758407Fd7fAC612630553f3900B7B22',
+    // Vault A (Balanced Core): 0xD59dA9f6118d5a3867564c2C2F325f33Fce980b7
+    // Vault B (DeFi Alpha):    0x4DDAf3BF65F95016570FB2e94Da468561F7163B5
   },
   // Base Sepolia (V2 deploy - 2026-02-06)
   84532: {
