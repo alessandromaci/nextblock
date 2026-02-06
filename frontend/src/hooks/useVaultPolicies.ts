@@ -1,8 +1,9 @@
 'use client';
 
 import { useReadContract, useReadContracts } from 'wagmi';
-import { INSURANCE_VAULT_ABI, POLICY_REGISTRY_ABI, ADDRESSES } from '@/config/contracts';
+import { INSURANCE_VAULT_ABI, POLICY_REGISTRY_ABI } from '@/config/contracts';
 import { POLL_INTERVAL } from '@/config/constants';
+import { useAddresses } from './useAddresses';
 
 /**
  * Vault-level policy data from getVaultPolicy().
@@ -88,8 +89,9 @@ export function useVaultPoliciesData(
 export function useGlobalPoliciesData(
   policyIds: readonly bigint[] | undefined,
 ) {
+  const addresses = useAddresses();
   const contracts = (policyIds ?? []).map((policyId) => ({
-    address: ADDRESSES.policyRegistry,
+    address: addresses.policyRegistry,
     abi: POLICY_REGISTRY_ABI,
     functionName: 'getPolicy' as const,
     args: [policyId] as const,
@@ -102,7 +104,7 @@ export function useGlobalPoliciesData(
       enabled:
         !!policyIds &&
         policyIds.length > 0 &&
-        ADDRESSES.policyRegistry !== '0x0000000000000000000000000000000000000000',
+        addresses.policyRegistry !== '0x0000000000000000000000000000000000000000',
     },
   });
 }

@@ -1,20 +1,22 @@
 'use client';
 
 import { useReadContract, useReadContracts } from 'wagmi';
-import { POLICY_REGISTRY_ABI, ADDRESSES } from '@/config/contracts';
+import { POLICY_REGISTRY_ABI } from '@/config/contracts';
 import { POLL_INTERVAL } from '@/config/constants';
+import { useAddresses } from './useAddresses';
 
 /**
  * Fetch the current virtual time from PolicyRegistry.
  */
 export function useCurrentTime() {
+  const addresses = useAddresses();
   return useReadContract({
-    address: ADDRESSES.policyRegistry,
+    address: addresses.policyRegistry,
     abi: POLICY_REGISTRY_ABI,
     functionName: 'currentTime',
     query: {
       refetchInterval: POLL_INTERVAL,
-      enabled: ADDRESSES.policyRegistry !== '0x0000000000000000000000000000000000000000',
+      enabled: addresses.policyRegistry !== '0x0000000000000000000000000000000000000000',
     },
   });
 }
@@ -23,13 +25,14 @@ export function useCurrentTime() {
  * Fetch the time offset from PolicyRegistry.
  */
 export function useTimeOffset() {
+  const addresses = useAddresses();
   return useReadContract({
-    address: ADDRESSES.policyRegistry,
+    address: addresses.policyRegistry,
     abi: POLICY_REGISTRY_ABI,
     functionName: 'timeOffset',
     query: {
       refetchInterval: POLL_INTERVAL,
-      enabled: ADDRESSES.policyRegistry !== '0x0000000000000000000000000000000000000000',
+      enabled: addresses.policyRegistry !== '0x0000000000000000000000000000000000000000',
     },
   });
 }
@@ -38,13 +41,14 @@ export function useTimeOffset() {
  * Fetch total number of registered policies.
  */
 export function usePolicyCount() {
+  const addresses = useAddresses();
   return useReadContract({
-    address: ADDRESSES.policyRegistry,
+    address: addresses.policyRegistry,
     abi: POLICY_REGISTRY_ABI,
     functionName: 'getPolicyCount',
     query: {
       refetchInterval: POLL_INTERVAL,
-      enabled: ADDRESSES.policyRegistry !== '0x0000000000000000000000000000000000000000',
+      enabled: addresses.policyRegistry !== '0x0000000000000000000000000000000000000000',
     },
   });
 }
@@ -53,9 +57,10 @@ export function usePolicyCount() {
  * Fetch all policies from the registry.
  */
 export function useAllPolicies(count: bigint | undefined) {
+  const addresses = useAddresses();
   const policyCount = Number(count ?? 0n);
   const contracts = Array.from({ length: policyCount }, (_, i) => ({
-    address: ADDRESSES.policyRegistry,
+    address: addresses.policyRegistry,
     abi: POLICY_REGISTRY_ABI,
     functionName: 'getPolicy' as const,
     args: [BigInt(i)] as const,
@@ -67,7 +72,7 @@ export function useAllPolicies(count: bigint | undefined) {
       refetchInterval: POLL_INTERVAL,
       enabled:
         policyCount > 0 &&
-        ADDRESSES.policyRegistry !== '0x0000000000000000000000000000000000000000',
+        addresses.policyRegistry !== '0x0000000000000000000000000000000000000000',
     },
   });
 }

@@ -1,14 +1,15 @@
 'use client';
 
 import { useAccount } from 'wagmi';
-import { ADMIN_ADDRESS } from '@/config/constants';
+import { useAdminAddress } from '@/hooks/useAdminAddress';
 
 export function WalletRoleIndicator() {
   const { address, isConnected } = useAccount();
+  const adminAddress = useAdminAddress();
 
   if (!isConnected || !address) return null;
 
-  const isAdmin = address.toLowerCase() === ADMIN_ADDRESS.toLowerCase();
+  const isAdmin = address.toLowerCase() === adminAddress.toLowerCase();
 
   return (
     <span

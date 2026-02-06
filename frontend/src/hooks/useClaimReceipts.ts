@@ -1,8 +1,9 @@
 'use client';
 
 import { useReadContract, useReadContracts } from 'wagmi';
-import { CLAIM_RECEIPT_ABI, ADDRESSES } from '@/config/contracts';
+import { CLAIM_RECEIPT_ABI } from '@/config/contracts';
 import { POLL_INTERVAL } from '@/config/constants';
+import { useAddresses } from './useAddresses';
 
 /**
  * Claim receipt data.
@@ -21,13 +22,14 @@ export interface ClaimReceiptData {
  * Fetch the next receipt ID (total count).
  */
 export function useReceiptCount() {
+  const addresses = useAddresses();
   return useReadContract({
-    address: ADDRESSES.claimReceipt,
+    address: addresses.claimReceipt,
     abi: CLAIM_RECEIPT_ABI,
     functionName: 'nextReceiptId',
     query: {
       refetchInterval: POLL_INTERVAL,
-      enabled: ADDRESSES.claimReceipt !== '0x0000000000000000000000000000000000000000',
+      enabled: addresses.claimReceipt !== '0x0000000000000000000000000000000000000000',
     },
   });
 }
@@ -37,9 +39,10 @@ export function useReceiptCount() {
  * Iterates from 0 to nextReceiptId and fetches each receipt.
  */
 export function useAllReceipts(nextReceiptId: bigint | undefined) {
+  const addresses = useAddresses();
   const count = Number(nextReceiptId ?? 0n);
   const contracts = Array.from({ length: count }, (_, i) => ({
-    address: ADDRESSES.claimReceipt,
+    address: addresses.claimReceipt,
     abi: CLAIM_RECEIPT_ABI,
     functionName: 'getReceipt' as const,
     args: [BigInt(i)] as const,
@@ -51,7 +54,7 @@ export function useAllReceipts(nextReceiptId: bigint | undefined) {
       refetchInterval: POLL_INTERVAL,
       enabled:
         count > 0 &&
-        ADDRESSES.claimReceipt !== '0x0000000000000000000000000000000000000000',
+        addresses.claimReceipt !== '0x0000000000000000000000000000000000000000',
     },
   });
 

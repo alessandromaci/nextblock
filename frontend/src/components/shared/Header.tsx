@@ -4,13 +4,14 @@ import Link from 'next/link';
 import { useAccount } from 'wagmi';
 import { WalletButton } from './WalletButton';
 import { WalletRoleIndicator } from './WalletRoleIndicator';
-import { ADMIN_ADDRESS } from '@/config/constants';
+import { useAdminAddress } from '@/hooks/useAdminAddress';
 
 export function Header() {
   const { address, isConnected } = useAccount();
+  const adminAddress = useAdminAddress();
   const isAdmin =
     isConnected &&
-    address?.toLowerCase() === ADMIN_ADDRESS.toLowerCase();
+    address?.toLowerCase() === adminAddress.toLowerCase();
 
   return (
     <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-sm">

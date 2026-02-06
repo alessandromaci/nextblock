@@ -2,7 +2,8 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { MOCK_USDC_ABI, INSURANCE_VAULT_ABI, ADDRESSES } from '@/config/contracts';
+import { MOCK_USDC_ABI, INSURANCE_VAULT_ABI } from '@/config/contracts';
+import { useAddresses } from './useAddresses';
 
 /**
  * Deposit flow state machine:
@@ -29,6 +30,7 @@ export function useDepositFlow({
   receiver,
   onSuccess,
 }: UseDepositFlowOptions) {
+  const addresses = useAddresses();
   const [state, setState] = useState<DepositState>('IDLE');
   const [error, setError] = useState<string | null>(null);
 
@@ -100,12 +102,12 @@ export function useDepositFlow({
     setState('APPROVING');
 
     writeApprove({
-      address: ADDRESSES.mockUSDC,
+      address: addresses.mockUSDC,
       abi: MOCK_USDC_ABI,
       functionName: 'approve',
       args: [vaultAddress, amount],
     });
-  }, [amount, vaultAddress, writeApprove]);
+  }, [amount, vaultAddress, writeApprove, addresses.mockUSDC]);
 
   const reset = useCallback(() => {
     setState('IDLE');

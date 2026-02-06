@@ -2,32 +2,34 @@
 
 import { useState } from 'react';
 import { useReadContract } from 'wagmi';
-import { MOCK_ORACLE_ABI, ADDRESSES } from '@/config/contracts';
+import { MOCK_ORACLE_ABI } from '@/config/contracts';
 import { useSetBtcPrice, useSetFlightStatus } from '@/hooks/useTimeControls';
 import { formatBtcPrice } from '@/lib/formatting';
 import { POLL_INTERVAL } from '@/config/constants';
+import { useAddresses } from '@/hooks/useAddresses';
 
 export function OracleControls() {
+  const addresses = useAddresses();
   const [btcInput, setBtcInput] = useState('');
 
   // Read current oracle state
   const { data: btcData } = useReadContract({
-    address: ADDRESSES.mockOracle,
+    address: addresses.mockOracle,
     abi: MOCK_ORACLE_ABI,
     functionName: 'getBtcPrice',
     query: {
       refetchInterval: POLL_INTERVAL,
-      enabled: ADDRESSES.mockOracle !== '0x0000000000000000000000000000000000000000',
+      enabled: addresses.mockOracle !== '0x0000000000000000000000000000000000000000',
     },
   });
 
   const { data: flightData } = useReadContract({
-    address: ADDRESSES.mockOracle,
+    address: addresses.mockOracle,
     abi: MOCK_ORACLE_ABI,
     functionName: 'getFlightStatus',
     query: {
       refetchInterval: POLL_INTERVAL,
-      enabled: ADDRESSES.mockOracle !== '0x0000000000000000000000000000000000000000',
+      enabled: addresses.mockOracle !== '0x0000000000000000000000000000000000000000',
     },
   });
 

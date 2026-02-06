@@ -1,8 +1,9 @@
 'use client';
 
 import { useReadContract, useReadContracts } from 'wagmi';
-import { VAULT_FACTORY_ABI, INSURANCE_VAULT_ABI, MOCK_USDC_ABI, ADDRESSES } from '@/config/contracts';
+import { VAULT_FACTORY_ABI, INSURANCE_VAULT_ABI, MOCK_USDC_ABI } from '@/config/contracts';
 import { POLL_INTERVAL } from '@/config/constants';
+import { useAddresses } from './useAddresses';
 
 /**
  * Vault info returned from getVaultInfo().
@@ -24,13 +25,14 @@ export interface VaultInfo {
  * Fetch the list of vault addresses from the VaultFactory.
  */
 export function useVaultAddresses() {
+  const addresses = useAddresses();
   return useReadContract({
-    address: ADDRESSES.vaultFactory,
+    address: addresses.vaultFactory,
     abi: VAULT_FACTORY_ABI,
     functionName: 'getVaults',
     query: {
       refetchInterval: POLL_INTERVAL,
-      enabled: ADDRESSES.vaultFactory !== '0x0000000000000000000000000000000000000000',
+      enabled: addresses.vaultFactory !== '0x0000000000000000000000000000000000000000',
     },
   });
 }
@@ -111,14 +113,15 @@ export function useMaxWithdraw(
  * Fetch user's USDC balance.
  */
 export function useUSDCBalance(userAddress: `0x${string}` | undefined) {
+  const addresses = useAddresses();
   return useReadContract({
-    address: ADDRESSES.mockUSDC,
+    address: addresses.mockUSDC,
     abi: MOCK_USDC_ABI,
     functionName: 'balanceOf',
     args: userAddress ? [userAddress] : undefined,
     query: {
       refetchInterval: POLL_INTERVAL,
-      enabled: !!userAddress && ADDRESSES.mockUSDC !== '0x0000000000000000000000000000000000000000',
+      enabled: !!userAddress && addresses.mockUSDC !== '0x0000000000000000000000000000000000000000',
     },
   });
 }
@@ -130,8 +133,9 @@ export function useUSDCAllowance(
   userAddress: `0x${string}` | undefined,
   spenderAddress: `0x${string}` | undefined,
 ) {
+  const addresses = useAddresses();
   return useReadContract({
-    address: ADDRESSES.mockUSDC,
+    address: addresses.mockUSDC,
     abi: MOCK_USDC_ABI,
     functionName: 'allowance',
     args: userAddress && spenderAddress ? [userAddress, spenderAddress] : undefined,
@@ -140,7 +144,7 @@ export function useUSDCAllowance(
       enabled:
         !!userAddress &&
         !!spenderAddress &&
-        ADDRESSES.mockUSDC !== '0x0000000000000000000000000000000000000000',
+        addresses.mockUSDC !== '0x0000000000000000000000000000000000000000',
     },
   });
 }

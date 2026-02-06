@@ -3562,16 +3562,47 @@ export const CLAIM_RECEIPT_ABI = [
 ] as const;
 
 // =============================================================================
-// Deployed contract addresses (Anvil local deployment via DemoSetup.s.sol).
+// Deployed contract addresses per chain.
 // =============================================================================
 
-export const ADDRESSES = {
-  vaultFactory: '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9' as `0x${string}`,
-  policyRegistry: '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9' as `0x${string}`,
-  mockUSDC: '0x5FbDB2315678afecb367f032d93F642f64180aa3' as `0x${string}`,
-  mockOracle: '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512' as `0x${string}`,
-  claimReceipt: '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0' as `0x${string}`,
-  // Vault addresses (deployed by factory, discovered via factory.getVaults())
-  // Vault A (Balanced Core): 0x856e4424f806D16E8CBC702B3c0F2ede5468eae5
-  // Vault B (DeFi Alpha):    0xb0279Db6a2F1E01fbC8483FCCef0Be2bC6299cC3
-} as const;
+export type ChainAddresses = {
+  vaultFactory: `0x${string}`;
+  policyRegistry: `0x${string}`;
+  mockUSDC: `0x${string}`;
+  mockOracle: `0x${string}`;
+  claimReceipt: `0x${string}`;
+};
+
+const ZERO = '0x0000000000000000000000000000000000000000' as `0x${string}`;
+
+export const ZERO_ADDRESSES: ChainAddresses = {
+  vaultFactory: ZERO,
+  policyRegistry: ZERO,
+  mockUSDC: ZERO,
+  mockOracle: ZERO,
+  claimReceipt: ZERO,
+};
+
+export const CHAIN_ADDRESSES: Record<number, ChainAddresses> = {
+  // Anvil local (DemoSetup.s.sol)
+  31337: {
+    vaultFactory: '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9',
+    policyRegistry: '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9',
+    mockUSDC: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
+    mockOracle: '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512',
+    claimReceipt: '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0',
+    // Vault A (Balanced Core): 0x856e4424f806D16E8CBC702B3c0F2ede5468eae5
+    // Vault B (DeFi Alpha):    0xb0279Db6a2F1E01fbC8483FCCef0Be2bC6299cC3
+  },
+  // Base Sepolia (to be filled after deployment)
+  84532: {
+    vaultFactory: ZERO,
+    policyRegistry: ZERO,
+    mockUSDC: ZERO,
+    mockOracle: ZERO,
+    claimReceipt: ZERO,
+  },
+};
+
+// Default export for backward compat
+export const ADDRESSES = CHAIN_ADDRESSES[31337]!;

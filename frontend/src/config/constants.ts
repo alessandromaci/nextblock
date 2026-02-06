@@ -39,10 +39,17 @@ export const SECONDS_PER_YEAR = 31_536_000;
 export const BASIS_POINTS = 10_000;
 
 /**
- * Admin wallet address (Wallet 1) -- all platform roles.
- * Updated after deployment.
+ * Admin wallet address per chain.
  */
-export const ADMIN_ADDRESS = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266' as `0x${string}`;
+export const CHAIN_ADMIN_ADDRESS: Record<number, `0x${string}`> = {
+  31337: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', // Anvil account 0
+  84532: '0x35cE744bc6b5CE979fA3251b8008b64C35aa8505', // Base Sepolia admin
+};
+
+/**
+ * Default admin address (Anvil).
+ */
+export const ADMIN_ADDRESS = CHAIN_ADMIN_ADDRESS[31337]!;
 
 /**
  * Verification type enum (matches Solidity PolicyRegistry.VerificationType).

@@ -2,7 +2,7 @@
 
 import { useAccount } from 'wagmi';
 import { useVaultAddresses, useMultiVaultInfo } from '@/hooks/useVaultData';
-import { ADMIN_ADDRESS } from '@/config/constants';
+import { useAdminAddress } from '@/hooks/useAdminAddress';
 import { TimeControls } from '@/components/admin/TimeControls';
 import { OracleControls } from '@/components/admin/OracleControls';
 import { ClaimTriggers } from '@/components/admin/ClaimTriggers';
@@ -12,9 +12,10 @@ import { DemoControls } from '@/components/admin/DemoControls';
 
 export default function AdminPage() {
   const { address, isConnected } = useAccount();
+  const adminAddress = useAdminAddress();
   const isAdmin =
     isConnected &&
-    address?.toLowerCase() === ADMIN_ADDRESS.toLowerCase();
+    address?.toLowerCase() === adminAddress.toLowerCase();
 
   const { data: vaultAddresses } = useVaultAddresses();
   const { data: vaultInfos } = useMultiVaultInfo(vaultAddresses);
@@ -57,7 +58,7 @@ export default function AdminPage() {
             Connected: {address}
           </p>
           <p className="mt-1 text-xs text-gray-400">
-            Required: {ADMIN_ADDRESS}
+            Required: {adminAddress}
           </p>
         </div>
       </div>

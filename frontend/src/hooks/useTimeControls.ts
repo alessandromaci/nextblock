@@ -1,18 +1,20 @@
 'use client';
 
 import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { POLICY_REGISTRY_ABI, MOCK_ORACLE_ABI, MOCK_USDC_ABI, ADDRESSES } from '@/config/contracts';
+import { POLICY_REGISTRY_ABI, MOCK_ORACLE_ABI, MOCK_USDC_ABI } from '@/config/contracts';
+import { useAddresses } from './useAddresses';
 
 /**
  * Hook for advancing time in the PolicyRegistry.
  */
 export function useAdvanceTime() {
+  const addresses = useAddresses();
   const { writeContract, data: txHash, isPending, error } = useWriteContract();
   const { isSuccess } = useWaitForTransactionReceipt({ hash: txHash });
 
   const advanceTime = (seconds: bigint) => {
     writeContract({
-      address: ADDRESSES.policyRegistry,
+      address: addresses.policyRegistry,
       abi: POLICY_REGISTRY_ABI,
       functionName: 'advanceTime',
       args: [seconds],
@@ -26,12 +28,13 @@ export function useAdvanceTime() {
  * Hook for setting BTC price in MockOracle.
  */
 export function useSetBtcPrice() {
+  const addresses = useAddresses();
   const { writeContract, data: txHash, isPending, error } = useWriteContract();
   const { isSuccess } = useWaitForTransactionReceipt({ hash: txHash });
 
   const setBtcPrice = (price: bigint) => {
     writeContract({
-      address: ADDRESSES.mockOracle,
+      address: addresses.mockOracle,
       abi: MOCK_ORACLE_ABI,
       functionName: 'setBtcPrice',
       args: [price],
@@ -45,12 +48,13 @@ export function useSetBtcPrice() {
  * Hook for setting flight status in MockOracle.
  */
 export function useSetFlightStatus() {
+  const addresses = useAddresses();
   const { writeContract, data: txHash, isPending, error } = useWriteContract();
   const { isSuccess } = useWaitForTransactionReceipt({ hash: txHash });
 
   const setFlightStatus = (delayed: boolean) => {
     writeContract({
-      address: ADDRESSES.mockOracle,
+      address: addresses.mockOracle,
       abi: MOCK_ORACLE_ABI,
       functionName: 'setFlightStatus',
       args: [delayed],
@@ -64,12 +68,13 @@ export function useSetFlightStatus() {
  * Hook for minting MockUSDC to an address (demo utility).
  */
 export function useMintUSDC() {
+  const addresses = useAddresses();
   const { writeContract, data: txHash, isPending, error } = useWriteContract();
   const { isSuccess } = useWaitForTransactionReceipt({ hash: txHash });
 
   const mint = (to: `0x${string}`, amount: bigint) => {
     writeContract({
-      address: ADDRESSES.mockUSDC,
+      address: addresses.mockUSDC,
       abi: MOCK_USDC_ABI,
       functionName: 'mint',
       args: [to, amount],
