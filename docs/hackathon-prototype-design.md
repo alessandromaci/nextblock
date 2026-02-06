@@ -1,11 +1,12 @@
 # NextBlock Hackathon Prototype -- Product Design Document
 
-**Author**: Paul (CPO Mentor) with Alessandro
+**Author**: Alessandro
 **Date**: February 5, 2026
 **Status**: V6 -- Build-Ready (implementation spec added: totalAssets formula, pre-funded premiums, claim receipt tokens, time offset, state transitions)
 **Purpose**: Map actors, money flows, yield mechanics, and all build decisions for the hackathon prototype.
 
 **Demo objective**: Test three concepts:
+
 1. Three types of insurance with different verification models -- the honest story of where blockchain adds value and where it doesn't
 2. Vault-based aggregation -- vault managers curate portfolios across all three types
 3. Open platform (Morpho-style) where NextBlock is infrastructure and vault managers deploy strategies on top
@@ -108,6 +109,7 @@ Different insurers use NextBlock for different purposes. Some cede in-force book
 ### Adverse Selection Protection
 
 To prevent insurers from cherry-picking which policies to cede (keeping profitable ones, dumping bad ones):
+
 - **Whole-portfolio obligatory cession**: The insurer cedes ALL policies in the defined category, not individual selections
 - **Insurer retains 50%**: At 50% retention, the cedant still loses money on every bad policy -- incentives stay aligned
 - **Vault manager due diligence**: Portfolio-level underwriting audit before accepting cessions
@@ -137,6 +139,7 @@ Investor deposits $100K into vault
 **Ring-fenced means ring-fenced**: The deployed capital sits in a smart contract with strict draw-down rights. The reinsurer can only withdraw funds to pay covered claims that meet the treaty's terms. They cannot use deployed capital for general operations, investments, or other business lines. At policy expiry, remaining capital automatically returns to the vault.
 
 **How this works for different verification types** (see Section 5 for full taxonomy):
+
 - **Fully on-chain** (e.g., BTC price protection): Claims are verified directly on-chain. The smart contract reads the oracle price and auto-triggers. No human involvement.
 - **Oracle-dependent** (e.g., flight delay): A third-party oracle reports the real-world event. The smart contract auto-triggers based on the oracle report.
 - **Fully off-chain** (e.g., commercial fire via Klapton RE): Dedicated ring-fenced smart contract. Capital is locked and only released when the insurer submits a verified claim.
@@ -153,17 +156,19 @@ NextBlock operates as open infrastructure with three distinct layers. No single 
 
 ### LAYER 1: Tokenization Infrastructure (NextBlock Protocol)
 
-| Actor | Role | Provides | Receives |
-|-------|------|----------|----------|
+| Actor                  | Role                        | Provides                                                                                                                                      | Receives                                                      |
+| ---------------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
 | **NextBlock Protocol** | Tokenization infrastructure | Smart contracts that represent insurance policies as on-chain assets; vault factory for vault managers; settlement and claim processing rails | Protocol fees (small % of TVL or per-policy tokenization fee) |
 
 NextBlock does NOT:
+
 - Originate or underwrite insurance policies
 - Decide which policies go into which vault
 - Manage investor capital allocation
 - Take insurance risk
 
 NextBlock DOES:
+
 - Provide the standard for tokenizing insurance policies on-chain
 - Provide a vault factory where vault managers deploy strategies
 - Process claim events and settle payouts through smart contracts
@@ -171,10 +176,10 @@ NextBlock DOES:
 
 ### LAYER 2: Supply Side (Insurance Originators) and Curation (Vault Managers)
 
-| Actor | Role | Provides | Receives |
-|-------|------|----------|----------|
+| Actor                         | Role                       | Provides                                                                                                      | Receives                                                                                 |
+| ----------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | **Insurer / Risk Originator** | Creates insurance policies | Policies with defined terms (coverage, premium, duration, trigger); underwriting expertise; claims assessment | Fresh capital from vault investors (unlocks growth capacity); retains portion of premium |
-| **Vault Manager (Curator)** | Curates vault strategy | Selection of which tokenized policies to include; allocation percentages; risk management; rebalancing | Management fee and/or performance fee from the vault |
+| **Vault Manager (Curator)**   | Curates vault strategy     | Selection of which tokenized policies to include; allocation percentages; risk management; rebalancing        | Management fee and/or performance fee from the vault                                     |
 
 Insurers are the SUPPLY SIDE. They have policies that need capital backing. They come to NextBlock to tokenize those policies and make them available to vault managers.
 
@@ -184,10 +189,10 @@ At hackathon launch: NextBlock is the only vault manager. But the architecture c
 
 ### LAYER 3: Demand Side (Capital Providers)
 
-| Actor | Role | Provides | Receives |
-|-------|------|----------|----------|
-| **Investor** | Capital provider | Deposits (stablecoins) that back insurance policies in the vault | Vault share token ($ONyc); yield from premiums minus claims minus fees; transparent portfolio visibility |
-| **Policyholder** | Buys insurance protection | Premium payment | Claim payout if trigger event occurs |
+| Actor            | Role                      | Provides                                                         | Receives                                                                                                 |
+| ---------------- | ------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| **Investor**     | Capital provider          | Deposits (stablecoins) that back insurance policies in the vault | Vault share token ($ONyc); yield from premiums minus claims minus fees; transparent portfolio visibility |
+| **Policyholder** | Buys insurance protection | Premium payment                                                  | Claim payout if trigger event occurs                                                                     |
 
 Note: the Policyholder may not interact with NextBlock at all. They buy insurance from the Insurer. The Insurer then tokenizes the policy through NextBlock. The policyholder may not know or care that their policy is backed by vault investors rather than the insurer's own balance sheet.
 
@@ -256,12 +261,12 @@ The token's value can change if a claim is triggered. The 100% realization of th
 
 The vault manager has curated a portfolio of 3 tokenized policies, one from each verification category:
 
-| Policy | What It Insures | Verification | Coverage | Premium | Duration | Status |
-|--------|----------------|-------------|----------|---------|----------|--------|
-| P1 | BTC price < $80K | On-chain (permissionless) | $50,000 | $2,500 (5%) | 90 days | Active, day 15 |
-| P2 | Flight delay > 2hrs | Oracle-dependent | $15,000 | $1,200 (8%) | 60 days | Active, day 10 |
-| P3 | Commercial fire damage | Off-chain (insurer) | $40,000 | $2,400 (6%) | 180 days | Active, day 30 |
-| **Total** | | | **$105,000** | **$6,100** | | |
+| Policy    | What It Insures        | Verification              | Coverage     | Premium     | Duration | Status         |
+| --------- | ---------------------- | ------------------------- | ------------ | ----------- | -------- | -------------- |
+| P1        | BTC price < $80K       | On-chain (permissionless) | $50,000      | $2,500 (5%) | 90 days  | Active, day 15 |
+| P2        | Flight delay > 2hrs    | Oracle-dependent          | $15,000      | $1,200 (8%) | 60 days  | Active, day 10 |
+| P3        | Commercial fire damage | Off-chain (insurer)       | $40,000      | $2,400 (6%) | 180 days | Active, day 30 |
+| **Total** |                        |                           | **$105,000** | **$6,100**  |          |                |
 
 The vault holds $80,000 total: $64,000 deployed to ring-fenced contracts backing these policies, and $16,000 retained as a liquidity buffer for investor withdrawals. The coverage-to-capital ratio is 131% ($105K coverage / $80K capital).
 
@@ -341,11 +346,11 @@ This is the tail risk. The investor's capital can decrease significantly in a ca
 
 #### Investor Expectations Summary
 
-| Question | Answer |
-|----------|--------|
-| How much can I expect from $10K? | $600-$1,200/year (6-12% APY) depending on vault strategy and loss ratio |
-| By when? | Yield accrues continuously but only becomes certain as policies expire without claims |
-| Is my capital locked? | No hard lock. Soft lock via liquidity buffer (see Section 4.3). Can exit anytime at current NAV from buffer, or sell shares on secondary market. |
+| Question                          | Answer                                                                                                                                                           |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| How much can I expect from $10K?  | $600-$1,200/year (6-12% APY) depending on vault strategy and loss ratio                                                                                          |
+| By when?                          | Yield accrues continuously but only becomes certain as policies expire without claims                                                                            |
+| Is my capital locked?             | No hard lock. Soft lock via liquidity buffer (see Section 4.3). Can exit anytime at current NAV from buffer, or sell shares on secondary market.                 |
 | Do I get the premium immediately? | Premium increases vault NAV over time (linear accrual), but it is "at risk" until policy expires. You capture it via rising share price, not a separate payment. |
 
 ### 4.2 Timeline of Money Movements
@@ -438,6 +443,7 @@ Scenario: Investor wants to exit during an active claim event
 ```
 
 This creates an interesting dynamic:
+
 - During calm periods: shares trade near NAV (small discount)
 - During claim events: shares trade at a larger discount (fear pricing)
 - After claim events resolve: shares recover toward NAV
@@ -498,6 +504,7 @@ Premiums accrue continuously across all three.
 #### For the Hackathon
 
 Suggested visualization:
+
 ```
   +---------------------------------------------+
   |  Vault Policy Timeline                       |
@@ -561,26 +568,31 @@ At policy expiry (claims occurred):
 Liquidity is the most common investor concern. The five-layer liquidity stack below is designed to handle scenarios from normal operations to severe stress:
 
 **Layer 1: Liquidity Buffer (15-20% of vault)**
+
 - Instant withdrawals up to buffer size
 - Replenished continuously by premium income and returning deployed capital
 - First line of defense; handles >90% of withdrawal requests in normal conditions
 
 **Layer 2: Staggered Policy Expiry**
+
 - Vault manager curates policies with different maturity dates (see Section 4.4)
 - Capital returns to vault regularly as policies expire
 - A well-managed vault has capital returning every 2-4 weeks
 
 **Layer 3: Secondary Market ($ONyc Trading)**
+
 - Investors can sell vault shares to other investors at any time
 - No impact on vault capital -- only ownership changes
 - Market pricing provides instant exit at fair (or discounted) value
 
 **Layer 4: Protocol-Owned Liquidity (Production)**
+
 - NextBlock maintains a protocol-owned liquidity pool for $ONyc pairs
 - Acts as buyer of last resort at a defined discount (e.g., 5% below NAV)
 - Funded by protocol treasury / NXB staking revenue
 
 **Layer 5: Redemption Queue (Last Resort)**
+
 - FIFO queue for redemptions when buffer is empty
 - Fills as policies expire and capital returns
 - Guaranteed exit, but with delay tied to policy maturity schedule
@@ -588,6 +600,7 @@ Liquidity is the most common investor concern. The five-layer liquidity stack be
 **The "Nobody Wants to Buy" Scenario**
 
 In a severe catastrophe year (multiple correlated claims + market panic), it is possible that:
+
 - Buffer is depleted by early withdrawals
 - Secondary market has no buyers (or only at steep discounts)
 - Redemption queue grows as investors try to exit simultaneously
@@ -610,11 +623,11 @@ NextBlock is NOT a vault. NextBlock is infrastructure that enables anyone to cre
 
 The hackathon organizes policies by **verification mechanism**, not by insurance category. This is the honest story of where blockchain adds value and where it doesn't.
 
-| Category | Verification | Example Sources | Strength | Limitation |
-|----------|-------------|-----------------|----------|------------|
-| **1. Fully on-chain** | Trigger condition verifiable directly on-chain (price feeds, smart contract state) | Nexus Mutual-style, DeFi covers | Trustless, instant, no oracle needed | Limited to crypto-native events |
-| **2. Oracle-dependent (hybrid)** | Real-world event verified via 3rd party oracle (Chainlink, weather API, flight API) | Parametric weather, flight delay, earthquake | Automatable, binary payout | Oracle trust assumption, data availability |
-| **3. Fully off-chain** | Claims assessed manually by insurer, tokenized representation only | Klapton RE-style (surety, D&O, liability, fire) | Covers any real-world risk | Not trustless, manual verification, slowest |
+| Category                         | Verification                                                                        | Example Sources                                 | Strength                             | Limitation                                  |
+| -------------------------------- | ----------------------------------------------------------------------------------- | ----------------------------------------------- | ------------------------------------ | ------------------------------------------- |
+| **1. Fully on-chain**            | Trigger condition verifiable directly on-chain (price feeds, smart contract state)  | Nexus Mutual-style, DeFi covers                 | Trustless, instant, no oracle needed | Limited to crypto-native events             |
+| **2. Oracle-dependent (hybrid)** | Real-world event verified via 3rd party oracle (Chainlink, weather API, flight API) | Parametric weather, flight delay, earthquake    | Automatable, binary payout           | Oracle trust assumption, data availability  |
+| **3. Fully off-chain**           | Claims assessed manually by insurer, tokenized representation only                  | Klapton RE-style (surety, D&O, liability, fire) | Covers any real-world risk           | Not trustless, manual verification, slowest |
 
 **The educational story**: "For crypto policies, anyone can verify. For weather and flights, we trust the oracle. For traditional insurance, we trust the insurer. NextBlock aggregates all three."
 
@@ -631,6 +644,7 @@ Category 3 (Off-chain):    INSURER_ADMIN calls submitClaim(amount) -> manual, pe
 ```
 
 **Key insight**: In the smart contracts, the underlying claim processing is similar. The difference is WHO can trigger the claim and HOW the trigger condition is verified. This maps directly to access control in the contracts:
+
 - P1: No access restriction on trigger -- anyone calls `checkClaim()`, contract verifies price. Binary: full coverage payout ($50K).
 - P2: `ORACLE_REPORTER` role required -- only the designated oracle reporter can call `reportEvent()`. Binary: full coverage payout ($15K).
 - P3: `INSURER_ADMIN` role required -- only the insurer can call `submitClaim(amount)`. Partial claims allowed (insurer specifies assessed amount up to coverage).
@@ -704,13 +718,13 @@ This is the difference between being Yearn (one team, one set of strategies) and
 
 **The Lloyd's of London analogy**: This architecture maps almost exactly to Lloyd's -- a 337-year-old marketplace where multiple syndicates (vault managers), each with their own managing agent and risk appetite, compete to underwrite risks presented in a common marketplace. External capital providers ("Names") choose which syndicates to back. Lloyd's provides the infrastructure, rules, and settlement. "We are building the Lloyd's of London for tokenized insurance" is a powerful positioning statement for the pitch.
 
-| NextBlock | Lloyd's of London |
-|-----------|-------------------|
-| NextBlock Protocol | Lloyd's marketplace + settlement |
-| Policy Marketplace | Lloyd's "slip" market |
-| Vault Manager | Managing agent running a syndicate |
-| Vault | A Lloyd's syndicate |
-| Investor | A "Name" providing capital |
+| NextBlock          | Lloyd's of London                  |
+| ------------------ | ---------------------------------- |
+| NextBlock Protocol | Lloyd's marketplace + settlement   |
+| Policy Marketplace | Lloyd's "slip" market              |
+| Vault Manager      | Managing agent running a syndicate |
+| Vault              | A Lloyd's syndicate                |
+| Investor           | A "Name" providing capital         |
 
 For a hackathon pitch, this transforms the narrative from:
 "We built a yield vault" (incremental)
@@ -722,17 +736,17 @@ to:
 ### 5.6 Hackathon Implementation
 
 **Must have**:
+
 1. Three policies from the marketplace, each with a distinct verification type and trigger mechanism
 2. Two vaults with different strategies (Balanced Core: all 3, DeFi Alpha: P1+P2 only)
 3. A vault detail page showing: who the vault manager is, strategy, which policies they selected, verification type labels
 4. Investor deposit flow works on both vaults
 5. Three different claim trigger paths visible in the admin panel
 
-**Nice to have (if time permits)**:
-6. A "Create Vault" flow on the admin page where a vault manager selects policies from the pool and sets allocations
-7. Different fee structures per vault
+**Nice to have (if time permits)**: 6. A "Create Vault" flow on the admin page where a vault manager selects policies from the pool and sets allocations 7. Different fee structures per vault
 
 **Skip for hackathon**:
+
 - Vault manager reputation/track record system
 - Vault manager staking/skin-in-the-game requirements
 - Permissionless vault creation
@@ -740,6 +754,7 @@ to:
 ### 5.7 Vault Manager Personas for the Hackathon
 
 **Vault Manager A: "NextBlock Core Team"**
+
 - Strategy: Diversified across all verification types
 - Holds: P1 (on-chain) + P2 (oracle) + P3 (off-chain)
 - Allocation weights: P1 40%, P2 20%, P3 40% (set by vault manager at addPolicy)
@@ -749,6 +764,7 @@ to:
 - Tagline: "Full-spectrum insurance diversification, steady yield"
 
 **Vault Manager B: "AlphaRe Capital" (fictional)**
+
 - Strategy: Automated-only, excludes off-chain verification
 - Holds: P1 (on-chain) + P2 (oracle) only
 - Allocation weights: P1 60%, P2 40% (set by vault manager at addPolicy)
@@ -845,11 +861,11 @@ Lower deployment (75%)  = Less capital earning yield, more buffer
 
 **The yield drag trade-off**: Every 1% of capital held in the buffer instead of deployed represents ~0.05-0.10% yield reduction (buffer capital earns nothing while deployed capital earns insurance premiums). A vault manager targeting 80% deployment vs 90% deployment sacrifices ~0.5-1.0% APY for the additional liquidity cushion.
 
-| Deployment Ratio | Buffer | Yield Impact | Liquidity |
-|-----------------|--------|-------------|-----------|
-| 90% | 10% | Maximum yield | Low buffer, relies on secondary market |
-| 80% | 20% | ~0.5-1% yield drag | Standard, handles most withdrawal needs |
-| 70% | 30% | ~1-2% yield drag | Conservative, high liquidity |
+| Deployment Ratio | Buffer | Yield Impact       | Liquidity                               |
+| ---------------- | ------ | ------------------ | --------------------------------------- |
+| 90%              | 10%    | Maximum yield      | Low buffer, relies on secondary market  |
+| 80%              | 20%    | ~0.5-1% yield drag | Standard, handles most withdrawal needs |
+| 70%              | 30%    | ~1-2% yield drag   | Conservative, high liquidity            |
 
 The vault manager optimizes this dynamically. During calm periods with low withdrawal demand, they can increase deployment. During hurricane season or market stress, they may reduce deployment to build a larger buffer. This is a core differentiator between vault managers (see Section 5.7).
 
@@ -859,13 +875,13 @@ The vault manager optimizes this dynamically. During calm periods with low withd
 
 Note: Loss ratios vary significantly by line of business and verification type. On-chain DeFi policies tend to have lower loss ratios (5-15%). Oracle-dependent parametric policies run 20-50%. Off-chain traditional lines run 55-75%.
 
-| Scenario | Premiums | Claims | Net | Yield on $80K Capital |
-|----------|----------|--------|-----|----------------------|
-| Best case (no claims) | $6,100 | $0 | $6,100 | 7.6% annualized |
-| Expected (20-30% loss ratio) | $6,100 | $1,200-$1,800 | $4,300-$4,900 | 5.4-6.1% annualized |
-| Moderate claims (50% loss ratio) | $6,100 | $3,050 | $3,050 | 3.8% annualized |
-| Heavy claims (one major) | $6,100 | $50,000 | -$43,900 | Capital loss |
-| Catastrophic (two major claims) | $6,100 | $90,000 | -$83,900 | Severe capital loss |
+| Scenario                         | Premiums | Claims        | Net           | Yield on $80K Capital |
+| -------------------------------- | -------- | ------------- | ------------- | --------------------- |
+| Best case (no claims)            | $6,100   | $0            | $6,100        | 7.6% annualized       |
+| Expected (20-30% loss ratio)     | $6,100   | $1,200-$1,800 | $4,300-$4,900 | 5.4-6.1% annualized   |
+| Moderate claims (50% loss ratio) | $6,100   | $3,050        | $3,050        | 3.8% annualized       |
+| Heavy claims (one major)         | $6,100   | $50,000       | -$43,900      | Capital loss          |
+| Catastrophic (two major claims)  | $6,100   | $90,000       | -$83,900      | Severe capital loss   |
 
 Note: With only 3 policies, concentration risk is higher than a production vault with 10-20 policies. A single major claim has a larger proportional impact. This is acceptable for the hackathon demo because it makes the claim event MORE dramatic and visible.
 
@@ -876,12 +892,14 @@ Note: With only 3 policies, concentration risk is higher than a production vault
 ### 7.1 Frontend: 3 Pages + Inline Sidebar (Morpho-style)
 
 **Page 1: Vault Discovery**
+
 - List of all available vaults (2 cards: Balanced Core + DeFi Alpha)
 - Each card: vault name, manager, APY, risk level, policy count, TVL, verification types included
 - Below or alongside: user's open vault positions (if wallet connected)
 - First impression -- must be polished
 
 **Page 2: Vault Detail**
+
 - Policy breakdown with verification type labels (subtle: "on-chain" / "oracle" / "off-chain")
 - Allocation weights per policy
 - Premium rates, expiry timelines
@@ -892,6 +910,7 @@ Note: With only 3 policies, concentration risk is higher than a production vault
 - The "I can see exactly what my money backs" moment
 
 **Inline Sidebar: Deposit / Withdraw (on Vault Detail page)**
+
 - Right-side panel always visible (Morpho-style), not a modal overlay
 - Enter amount, see share calculation
 - Confirm transaction
@@ -899,6 +918,7 @@ Note: With only 3 policies, concentration risk is higher than a production vault
 - Withdraw tab (integrated): shows available buffer, processes redemption
 
 **Page 3: Admin / Curator (combined)**
+
 - Section 1 -- Vault Management: Create vault, select policies from available pool, set allocations, set fees, assign manager
 - Section 2 -- Simulation Controls: Advance time (fast-forward for premium accrual), trigger claim events per policy type (BTC crash = permissionless, flight delay = oracle report, fire = insurer assessment), reset events for demo replay
 - Policies shown here in context of the available pool for curators to select from
@@ -1118,90 +1138,90 @@ All blocking decisions have been resolved by Alessandro. This section documents 
 
 ### 9.1 Product Decisions
 
-| # | Decision | Choice | Decided By |
-|---|----------|--------|------------|
-| 1 | Policy taxonomy | By verification mechanism (on-chain / oracle / off-chain), not insurance category | Alessandro |
-| 2 | Number of policies | 3 (one per verification type) | Alessandro |
-| 3 | P1 (on-chain) | BTC Price Protection | Alessandro |
-| 4 | P2 (oracle-dependent) | Flight Delay | Alessandro |
-| 5 | P3 (off-chain) | Commercial Fire | Alessandro |
-| 6 | Number of vaults | 2 (platform story requires contrast) | Alessandro |
-| 7 | Vault A | "Balanced Core" -- all 3 policies, NextBlock Core Team | Alessandro |
-| 8 | Vault B | "DeFi Alpha" -- P1+P2 only, AlphaRe Capital | Alessandro |
-| 9 | Shared policy | P1 (BTC) in both vaults | Alessandro |
-| 10 | Frontend pages | 3 pages + inline sidebar (Morpho-style) | Alessandro |
-| 11 | Persona | Dual framing (institutional pitch, retail demo) | Alessandro |
-| 12 | Verification labels | Subtle label in UI (not prominent categorization) | Alessandro |
-| 13 | Claim triggers | 3 distinct paths: permissionless / oracle reporter / insurer admin | Alessandro |
-| 14 | Policyholder in demo | Simulated (pre-loaded) | Alessandro |
-| 15 | Yield mechanism | NAV accrual (hackathon), dividend model (pitch) | Advisor rec |
-| 16 | Premium accrual | Pre-funded: insurer deposits full premium (MockUSDC) at policy registration. UPR transfer -- standard reinsurance practice. Accrues linearly over duration. | Alessandro |
-| 17 | Capital deployment | Accounting-only for hackathon. Vault A: 80/20 buffer. Vault B: 85/15 buffer. Per-vault configurable. | Alessandro |
-| 18 | Early exit | Buffer-only for hackathon; secondary market + queue in pitch | Advisor rec |
-| 19 | Quota share cession | Skip for hackathon (100% risk + 100% premium to vault) | Advisor rec |
-| 20 | Time simulation | Internal time offset (`currentTime() = block.timestamp + timeOffset`). Works on any chain. Admin-only `advanceTime(seconds)`. | Alessandro |
-| 21 | Claim mechanics | Claim receipt token: vault mints receipt to insurer on trigger, insurer exercises to withdraw USDC. Two-step flow. | Alessandro |
-| 22 | Claim amounts | P1/P2: binary, full coverage payout. P3: partial claims allowed (insurer specifies assessed amount). | Alessandro |
-| 23 | Post-claim state | Policy becomes CLAIMED, premium accrual stops. P3 partial: single claim consumes policy fully (remaining coverage forfeited). | Alessandro |
-| 24 | Allocation weights | Vault manager sets weights manually via `addPolicy(policyId, weight)`. Must sum to 100%. | Alessandro |
-| 25 | Fee model (hackathon) | Management fee only (0.5% Vault A, 1% Vault B, annualized, time-weighted). No performance fee. | Alessandro |
+| #   | Decision              | Choice                                                                                                                                                      | Decided By  |
+| --- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| 1   | Policy taxonomy       | By verification mechanism (on-chain / oracle / off-chain), not insurance category                                                                           | Alessandro  |
+| 2   | Number of policies    | 3 (one per verification type)                                                                                                                               | Alessandro  |
+| 3   | P1 (on-chain)         | BTC Price Protection                                                                                                                                        | Alessandro  |
+| 4   | P2 (oracle-dependent) | Flight Delay                                                                                                                                                | Alessandro  |
+| 5   | P3 (off-chain)        | Commercial Fire                                                                                                                                             | Alessandro  |
+| 6   | Number of vaults      | 2 (platform story requires contrast)                                                                                                                        | Alessandro  |
+| 7   | Vault A               | "Balanced Core" -- all 3 policies, NextBlock Core Team                                                                                                      | Alessandro  |
+| 8   | Vault B               | "DeFi Alpha" -- P1+P2 only, AlphaRe Capital                                                                                                                 | Alessandro  |
+| 9   | Shared policy         | P1 (BTC) in both vaults                                                                                                                                     | Alessandro  |
+| 10  | Frontend pages        | 3 pages + inline sidebar (Morpho-style)                                                                                                                     | Alessandro  |
+| 11  | Persona               | Dual framing (institutional pitch, retail demo)                                                                                                             | Alessandro  |
+| 12  | Verification labels   | Subtle label in UI (not prominent categorization)                                                                                                           | Alessandro  |
+| 13  | Claim triggers        | 3 distinct paths: permissionless / oracle reporter / insurer admin                                                                                          | Alessandro  |
+| 14  | Policyholder in demo  | Simulated (pre-loaded)                                                                                                                                      | Alessandro  |
+| 15  | Yield mechanism       | NAV accrual (hackathon), dividend model (pitch)                                                                                                             | Advisor rec |
+| 16  | Premium accrual       | Pre-funded: insurer deposits full premium (MockUSDC) at policy registration. UPR transfer -- standard reinsurance practice. Accrues linearly over duration. | Alessandro  |
+| 17  | Capital deployment    | Accounting-only for hackathon. Vault A: 80/20 buffer. Vault B: 85/15 buffer. Per-vault configurable.                                                        | Alessandro  |
+| 18  | Early exit            | Buffer-only for hackathon; secondary market + queue in pitch                                                                                                | Advisor rec |
+| 19  | Quota share cession   | Skip for hackathon (100% risk + 100% premium to vault)                                                                                                      | Advisor rec |
+| 20  | Time simulation       | Internal time offset (`currentTime() = block.timestamp + timeOffset`). Works on any chain. Admin-only `advanceTime(seconds)`.                               | Alessandro  |
+| 21  | Claim mechanics       | Claim receipt token: vault mints receipt to insurer on trigger, insurer exercises to withdraw USDC. Two-step flow.                                          | Alessandro  |
+| 22  | Claim amounts         | P1/P2: binary, full coverage payout. P3: partial claims allowed (insurer specifies assessed amount).                                                        | Alessandro  |
+| 23  | Post-claim state      | Policy becomes CLAIMED, premium accrual stops. P3 partial: single claim consumes policy fully (remaining coverage forfeited).                               | Alessandro  |
+| 24  | Allocation weights    | Vault manager sets weights manually via `addPolicy(policyId, weight)`. Must sum to 100%.                                                                    | Alessandro  |
+| 25  | Fee model (hackathon) | Management fee only (0.5% Vault A, 1% Vault B, annualized, time-weighted). No performance fee.                                                              | Alessandro  |
 
 ### 9.2 Technical Decisions
 
-| # | Decision | Choice | Decided By |
-|---|----------|--------|------------|
-| 26 | Token standard | ERC-4626 (see decision 001) | Advisor rec, confirmed |
-| 27 | Chain | Base Sepolia + Anvil local backup | Advisor rec, confirmed |
-| 28 | Toolchain | Foundry (forge/anvil) | Advisor rec, confirmed |
-| 29 | Admin model | Simple Ownable (single admin) | Advisor rec |
-| 30 | Oracle | Admin-controlled mock | Advisor rec |
-| 31 | Contracts | 6 total: MockUSDC, MockOracle, PolicyRegistry, InsuranceVault, VaultFactory, ClaimReceipt | Alessandro |
-| 32 | totalAssets() | Balance-based: `USDC.balanceOf(vault) - unearnedPremiums - pendingClaims - accruedFees`. No double-counting. See Section 11.5. | Alessandro |
+| #   | Decision       | Choice                                                                                                                         | Decided By             |
+| --- | -------------- | ------------------------------------------------------------------------------------------------------------------------------ | ---------------------- |
+| 26  | Token standard | ERC-4626 (see decision 001)                                                                                                    | Advisor rec, confirmed |
+| 27  | Chain          | Base Sepolia + Anvil local backup                                                                                              | Advisor rec, confirmed |
+| 28  | Toolchain      | Foundry (forge/anvil)                                                                                                          | Advisor rec, confirmed |
+| 29  | Admin model    | Simple Ownable (single admin)                                                                                                  | Advisor rec            |
+| 30  | Oracle         | Admin-controlled mock                                                                                                          | Advisor rec            |
+| 31  | Contracts      | 6 total: MockUSDC, MockOracle, PolicyRegistry, InsuranceVault, VaultFactory, ClaimReceipt                                      | Alessandro             |
+| 32  | totalAssets()  | Balance-based: `USDC.balanceOf(vault) - unearnedPremiums - pendingClaims - accruedFees`. No double-counting. See Section 11.5. | Alessandro             |
 
 ### 9.3 What We Skip (and Why)
 
-| Feature | Skip Reason | Production Plan |
-|---------|-------------|----------------|
-| PT/YT tokens | 2-3 days build, 30s demo value | V2 feature, Pendle-style |
-| NXB governance | Tokenomics complexity, zero demo value | Post-TVL traction |
-| ERC-3643 / KYC | 6-8 extra contracts, no testnet need | Compliance wrapper on mainnet |
-| Real oracle (Chainlink) | Unpredictable timing during demo | Production requirement |
-| Ring-fenced capital contracts | Accounting tracking + ClaimReceipt tokens sufficient | Per-reinsurer escrow contracts |
-| Secondary market / AMM | Would need Uniswap integration | Mechanism 2 for production |
-| Redemption queue | Buffer-only withdrawal is demo-sufficient | Mechanism 3 for production |
-| Policyholder flows | NextBlock is NOT the insurer | Never in scope |
-| Mobile | DeFi is 80%+ desktop | Post-launch optimization |
-| Historical analytics | No track record to show | After mainnet data |
-| Upgradeable proxies | Single deploy, no upgrades | Production requirement |
-| Multi-chain | Zero demo value | LayerZero/CCIP for production |
-| Account abstraction (4337) | Extra complexity, judges use MetaMask | Production retail UX |
-| Standalone policy marketplace page | Policies visible in vault detail + admin page | Production feature |
+| Feature                            | Skip Reason                                          | Production Plan                |
+| ---------------------------------- | ---------------------------------------------------- | ------------------------------ |
+| PT/YT tokens                       | 2-3 days build, 30s demo value                       | V2 feature, Pendle-style       |
+| NXB governance                     | Tokenomics complexity, zero demo value               | Post-TVL traction              |
+| ERC-3643 / KYC                     | 6-8 extra contracts, no testnet need                 | Compliance wrapper on mainnet  |
+| Real oracle (Chainlink)            | Unpredictable timing during demo                     | Production requirement         |
+| Ring-fenced capital contracts      | Accounting tracking + ClaimReceipt tokens sufficient | Per-reinsurer escrow contracts |
+| Secondary market / AMM             | Would need Uniswap integration                       | Mechanism 2 for production     |
+| Redemption queue                   | Buffer-only withdrawal is demo-sufficient            | Mechanism 3 for production     |
+| Policyholder flows                 | NextBlock is NOT the insurer                         | Never in scope                 |
+| Mobile                             | DeFi is 80%+ desktop                                 | Post-launch optimization       |
+| Historical analytics               | No track record to show                              | After mainnet data             |
+| Upgradeable proxies                | Single deploy, no upgrades                           | Production requirement         |
+| Multi-chain                        | Zero demo value                                      | LayerZero/CCIP for production  |
+| Account abstraction (4337)         | Extra complexity, judges use MetaMask                | Production retail UX           |
+| Standalone policy marketplace page | Policies visible in vault detail + admin page        | Production feature             |
 
 ---
 
 ## 10. Key Product Decisions Summary
 
-| Decision | Choice | Why |
-|----------|--------|-----|
-| NextBlock's role | Infrastructure / protocol. NEVER the insurer. | Core positioning |
-| Core demo concept | Three verification types + where blockchain adds value | Honest, educational, differentiating |
-| Primary demo flow | Investor | NextBlock's core user |
-| Number of vaults | 2 (different managers, different verification trust) | Platform story needs contrast |
-| Number of policies | 3 (one per verification type) | Clean, educational, buildable |
-| Vault manager concept | Core to the demo | This is the platform story |
-| Vault B thesis | Automated-only (excludes off-chain) | Shows different risk philosophies |
-| Policy taxonomy | By verification mechanism, not insurance category | More honest and educational |
-| Policyholder in demo | Simulated (pre-loaded) | Reduces demo risk |
-| Yield mechanism | NAV accrual for hackathon, dividend in presentation | Simple to build, compelling to show |
-| Policy expiry model | Staggered expiry dates (60d, 90d, 180d) | Rolling yield, natural liquidity |
-| Capital deployment | 80% deployed, 20% buffer (accounting-only) | Honest trade-off, visible in UI |
-| Early exit | Buffer-only for hackathon | Simple, production mechanisms in pitch |
-| Claim triggers | 3 distinct paths (permissionless / oracle / insurer) | The most interesting technical detail |
-| Time simulation | Manual "advance" button | Presenter controls pacing |
-| Frontend | 3 pages + inline sidebar | Clean Morpho-style UX |
-| PT/YT | Skip | Out of scope |
-| NXB token | Skip | Out of scope |
-| KYC / ERC-3643 | Skip | Out of scope |
+| Decision              | Choice                                                 | Why                                    |
+| --------------------- | ------------------------------------------------------ | -------------------------------------- |
+| NextBlock's role      | Infrastructure / protocol. NEVER the insurer.          | Core positioning                       |
+| Core demo concept     | Three verification types + where blockchain adds value | Honest, educational, differentiating   |
+| Primary demo flow     | Investor                                               | NextBlock's core user                  |
+| Number of vaults      | 2 (different managers, different verification trust)   | Platform story needs contrast          |
+| Number of policies    | 3 (one per verification type)                          | Clean, educational, buildable          |
+| Vault manager concept | Core to the demo                                       | This is the platform story             |
+| Vault B thesis        | Automated-only (excludes off-chain)                    | Shows different risk philosophies      |
+| Policy taxonomy       | By verification mechanism, not insurance category      | More honest and educational            |
+| Policyholder in demo  | Simulated (pre-loaded)                                 | Reduces demo risk                      |
+| Yield mechanism       | NAV accrual for hackathon, dividend in presentation    | Simple to build, compelling to show    |
+| Policy expiry model   | Staggered expiry dates (60d, 90d, 180d)                | Rolling yield, natural liquidity       |
+| Capital deployment    | 80% deployed, 20% buffer (accounting-only)             | Honest trade-off, visible in UI        |
+| Early exit            | Buffer-only for hackathon                              | Simple, production mechanisms in pitch |
+| Claim triggers        | 3 distinct paths (permissionless / oracle / insurer)   | The most interesting technical detail  |
+| Time simulation       | Manual "advance" button                                | Presenter controls pacing              |
+| Frontend              | 3 pages + inline sidebar                               | Clean Morpho-style UX                  |
+| PT/YT                 | Skip                                                   | Out of scope                           |
+| NXB token             | Skip                                                   | Out of scope                           |
+| KYC / ERC-3643        | Skip                                                   | Out of scope                           |
 
 ---
 
@@ -1209,31 +1229,31 @@ All blocking decisions have been resolved by Alessandro. This section documents 
 
 ### The 3 Policies
 
-| ID | Name | Verification | Coverage | Premium (rate) | Duration | Vaults | Claim Type | Trigger |
-|----|------|-------------|----------|---------------|----------|--------|------------|---------|
-| P1 | BTC Price Protection | On-chain | $50,000 | $2,500 (5%) | 90 days | A + B | Binary (full) | Permissionless: anyone calls `checkClaim()`, reads oracle price |
-| P2 | Flight Delay | Oracle-dependent | $15,000 | $1,200 (8%) | 60 days | A + B | Binary (full) | Oracle reporter calls `reportEvent()`, auto-triggers |
-| P3 | Commercial Fire | Off-chain | $40,000 | $2,400 (6%) | 180 days | A only | Partial allowed | Insurer admin calls `submitClaim(amount)`, permissioned |
+| ID  | Name                 | Verification     | Coverage | Premium (rate) | Duration | Vaults | Claim Type      | Trigger                                                         |
+| --- | -------------------- | ---------------- | -------- | -------------- | -------- | ------ | --------------- | --------------------------------------------------------------- |
+| P1  | BTC Price Protection | On-chain         | $50,000  | $2,500 (5%)    | 90 days  | A + B  | Binary (full)   | Permissionless: anyone calls `checkClaim()`, reads oracle price |
+| P2  | Flight Delay         | Oracle-dependent | $15,000  | $1,200 (8%)    | 60 days  | A + B  | Binary (full)   | Oracle reporter calls `reportEvent()`, auto-triggers            |
+| P3  | Commercial Fire      | Off-chain        | $40,000  | $2,400 (6%)    | 180 days | A only | Partial allowed | Insurer admin calls `submitClaim(amount)`, permissioned         |
 
 P1 (BTC Protection) is in BOTH vaults -- this is the shared policy that proves the platform story. Each vault independently backs and processes claims for shared policies.
 
 ### The 2 Vaults
 
-| Vault | Manager | Policies | Allocation Weights | Buffer Ratio | Mgmt Fee | Strategy | Target APY |
-|-------|---------|----------|--------------------|--------------|----------|----------|------------|
-| Vault A: "Balanced Core" | NextBlock Core Team | P1, P2, P3 | P1: 40%, P2: 20%, P3: 40% | 20% buffer / 80% deployed | 0.5% annual | Diversified, all verification types | 8-12% |
-| Vault B: "DeFi Alpha" | AlphaRe Capital | P1, P2 | P1: 60%, P2: 40% | 15% buffer / 85% deployed | 1% annual | Automated-only, no off-chain | 10-14% |
+| Vault                    | Manager             | Policies   | Allocation Weights        | Buffer Ratio              | Mgmt Fee    | Strategy                            | Target APY |
+| ------------------------ | ------------------- | ---------- | ------------------------- | ------------------------- | ----------- | ----------------------------------- | ---------- |
+| Vault A: "Balanced Core" | NextBlock Core Team | P1, P2, P3 | P1: 40%, P2: 20%, P3: 40% | 20% buffer / 80% deployed | 0.5% annual | Diversified, all verification types | 8-12%      |
+| Vault B: "DeFi Alpha"    | AlphaRe Capital     | P1, P2     | P1: 60%, P2: 40%          | 15% buffer / 85% deployed | 1% annual   | Automated-only, no off-chain        | 10-14%     |
 
 ### The 6 Smart Contracts
 
-| Contract | Purpose |
-|----------|---------|
-| MockUSDC | ERC-20 mock stablecoin (6 decimals). Admin can mint for demo. |
-| MockOracle | Stores BTC price + flight event status. Admin-controlled. |
-| PolicyRegistry | Registers policies with terms, insurer address, verification type. Source of truth for policy data. |
-| InsuranceVault | ERC-4626 vault. Holds investor deposits + insurer premiums. Issues share tokens. Processes claims via receipt tokens. |
-| VaultFactory | Deploys new InsuranceVault instances. Sets vault manager, buffer ratio, fee rate. |
-| ClaimReceipt | Soulbound ERC-721 token minted to insurers on claim trigger. Non-transferable. Receipt struct includes `insurer` field. Represents right to withdraw claim amount from vault. |
+| Contract       | Purpose                                                                                                                                                                       |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| MockUSDC       | ERC-20 mock stablecoin (6 decimals). Admin can mint for demo.                                                                                                                 |
+| MockOracle     | Stores BTC price + flight event status. Admin-controlled.                                                                                                                     |
+| PolicyRegistry | Registers policies with terms, insurer address, verification type. Source of truth for policy data.                                                                           |
+| InsuranceVault | ERC-4626 vault. Holds investor deposits + insurer premiums. Issues share tokens. Processes claims via receipt tokens.                                                         |
+| VaultFactory   | Deploys new InsuranceVault instances. Sets vault manager, buffer ratio, fee rate.                                                                                             |
+| ClaimReceipt   | Soulbound ERC-721 token minted to insurers on claim trigger. Non-transferable. Receipt struct includes `insurer` field. Represents right to withdraw claim amount from vault. |
 
 ### The 3 Frontend Pages + Inline Sidebar
 
@@ -1318,26 +1338,28 @@ function totalAssets() public view override returns (uint256) {
 ```
 
 Where:
+
 - `USDC.balanceOf(vault)` = investor deposits + insurer premiums - exercised claims (real USDC in contract)
 - `_totalUnearnedPremiums()` = `Σ(policy.premium * max(0, duration - elapsed) / duration)` for each active policy
 - `totalPendingClaims` = sum of triggered-but-not-yet-exercised claim amounts (ClaimReceipt tokens outstanding)
 - `_accruedFees(preFeeAssets)` = `managementFeeRate * preFeeAssets * elapsed / 365 days` (pre-fee basis to break circularity)
 
 **Important**: `totalDeployedCapital` is NOT in this formula. It is tracked separately for:
+
 - Enforcing `maxWithdraw()` (capped at available buffer = balance - deployed - pendingClaims)
 - Frontend display ("80% deployed / 20% buffer")
 
 ### 11.5.3 State Transition Table
 
-| Action | USDC.balanceOf | totalDeployedCapital | totalPendingClaims | unearnedPremiums | Policy status |
-|--------|---------------|---------------------|-------------------|-----------------|---------------|
-| **Investor deposits $10K** | +$10K | +$8K (80% of deposit) | -- | -- | -- |
-| **Admin registers policy + premium $2.5K** | +$2.5K | -- | -- | +$2.5K | ACTIVE |
-| **Time passes 30 days** (on 90-day policy) | -- | -- | -- | -$833 (1/3 earned) | -- |
-| **Claim triggers P1 ($50K)** | -- | -- | +$50K | stops accruing | CLAIMED |
-| **Insurer exercises claim receipt** | -$50K | -$50K | -$50K | -- | -- |
-| **Investor withdraws $5K** | -$5K | -- | -- | -- | -- |
-| **Policy expires (no claim)** | -- | deployed returns to buffer | -- | →$0 (fully earned) | EXPIRED |
+| Action                                     | USDC.balanceOf | totalDeployedCapital       | totalPendingClaims | unearnedPremiums   | Policy status |
+| ------------------------------------------ | -------------- | -------------------------- | ------------------ | ------------------ | ------------- |
+| **Investor deposits $10K**                 | +$10K          | +$8K (80% of deposit)      | --                 | --                 | --            |
+| **Admin registers policy + premium $2.5K** | +$2.5K         | --                         | --                 | +$2.5K             | ACTIVE        |
+| **Time passes 30 days** (on 90-day policy) | --             | --                         | --                 | -$833 (1/3 earned) | --            |
+| **Claim triggers P1 ($50K)**               | --             | --                         | +$50K              | stops accruing     | CLAIMED       |
+| **Insurer exercises claim receipt**        | -$50K          | -$50K                      | -$50K              | --                 | --            |
+| **Investor withdraws $5K**                 | -$5K           | --                         | --                 | --                 | --            |
+| **Policy expires (no claim)**              | --             | deployed returns to buffer | --                 | →$0 (fully earned) | EXPIRED       |
 
 ### 11.5.4 Claim Receipt Token Flow
 
@@ -1370,6 +1392,7 @@ Step 2: EXERCISE (insurer calls exerciseClaim)
 **Shared policy (P1 in both vaults)**: When P1 triggers, EACH vault holding P1 independently mints a ClaimReceipt. The insurer receives one receipt per vault. Each vault's NAV drops independently.
 
 **Claim amounts**:
+
 - P1 (on-chain, BTC): Binary. Claim amount = full coverage ($50K). `checkClaim()` checks oracle price, if below threshold, triggers for full amount.
 - P2 (oracle-dependent, flight): Binary. Claim amount = full coverage ($15K). `reportEvent()` triggers for full amount.
 - P3 (off-chain, fire): Partial allowed. `submitClaim(policyId, assessedAmount)` where assessedAmount <= coverage. Insurer specifies assessed damage. **Single claim consumes policy** (`claimed = true`); remaining coverage forfeited. No multi-claim support for hackathon.
@@ -1392,6 +1415,7 @@ function advanceTime(uint256 secondsToAdd) external onlyAdmin {
 ```
 
 **All time-dependent calculations** use `currentTime()` instead of `block.timestamp`:
+
 - Premium accrual: `elapsed = currentTime() - policy.startTime`
 - Policy expiry check: `currentTime() >= policy.startTime + policy.duration`
 - Fee accrual: `elapsed = currentTime() - lastFeeTimestamp`
@@ -1449,17 +1473,17 @@ event PolicyExpired(uint256 indexed policyId);
 
 ### 11.5.9 Edge Cases
 
-| Edge Case | Behavior |
-|-----------|----------|
-| Deposit of 0 USDC | Revert (ERC-4626 standard) |
-| Withdraw more than buffer | Partial withdrawal up to buffer. Revert if 0 available. |
-| Claim exceeds vault USDC balance | Cap payout at `Math.min(claimAmount, USDC.balanceOf(vault))`. Burn receipt regardless. Emit `ClaimShortfall` event. Insurer absorbs the loss. |
-| Claim on already-claimed policy (P1/P2) | Revert ("Already claimed") |
-| Double-exercise of same receipt | Receipt is burned on exercise. Second call reverts. |
-| Time advanced past multiple expiries | Lazy evaluation: each policy checks its own expiry on next interaction |
-| All policies expired, no new ones | Vault becomes withdraw-only. totalAssets = balance - fees. |
-| totalAssets() approaches 0 | Returns 0 (floor). Never reverts. |
-| First depositor inflation attack | Use OZ 5.x virtual shares offset (built into ERC4626 implementation) |
+| Edge Case                               | Behavior                                                                                                                                      |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Deposit of 0 USDC                       | Revert (ERC-4626 standard)                                                                                                                    |
+| Withdraw more than buffer               | Partial withdrawal up to buffer. Revert if 0 available.                                                                                       |
+| Claim exceeds vault USDC balance        | Cap payout at `Math.min(claimAmount, USDC.balanceOf(vault))`. Burn receipt regardless. Emit `ClaimShortfall` event. Insurer absorbs the loss. |
+| Claim on already-claimed policy (P1/P2) | Revert ("Already claimed")                                                                                                                    |
+| Double-exercise of same receipt         | Receipt is burned on exercise. Second call reverts.                                                                                           |
+| Time advanced past multiple expiries    | Lazy evaluation: each policy checks its own expiry on next interaction                                                                        |
+| All policies expired, no new ones       | Vault becomes withdraw-only. totalAssets = balance - fees.                                                                                    |
+| totalAssets() approaches 0              | Returns 0 (floor). Never reverts.                                                                                                             |
+| First depositor inflation attack        | Use OZ 5.x virtual shares offset (built into ERC4626 implementation)                                                                          |
 
 ---
 
@@ -1514,11 +1538,11 @@ In real ILS fund management and at Lloyd's, managing agents typically invest 5-1
 
 ### 12.7 Loss Ratio Reality Check by Line
 
-| Line of Business | Realistic Loss Ratio | Notes |
-|-----------------|---------------------|-------|
-| DeFi smart contract cover (on-chain) | 5-15% | Low but market is immature; partly reflects restrictive claims processes |
-| Parametric flight delay (oracle-dep) | 30-50% | High frequency, priced for it |
-| Commercial property / fire (off-chain) | 55-75% | Spikes >100% in catastrophe years |
+| Line of Business                       | Realistic Loss Ratio | Notes                                                                    |
+| -------------------------------------- | -------------------- | ------------------------------------------------------------------------ |
+| DeFi smart contract cover (on-chain)   | 5-15%                | Low but market is immature; partly reflects restrictive claims processes |
+| Parametric flight delay (oracle-dep)   | 30-50%               | High frequency, priced for it                                            |
+| Commercial property / fire (off-chain) | 55-75%               | Spikes >100% in catastrophe years                                        |
 
 For the hackathon demo, the blend of these three types creates a realistic and defensible range. Do not present uniformly low loss ratios across all three types.
 
@@ -1527,6 +1551,7 @@ For the hackathon demo, the blend of these three types creates a realistic and d
 The hackathon's organization by verification type maps naturally to a production launch sequence:
 
 **Recommended launch sequence**:
+
 - Phase 1 (hackathon + mainnet launch): On-chain DeFi policies + oracle-dependent parametric (where blockchain verification adds real value)
 - Phase 2 (6-12 months post-launch): Short-tail off-chain commercial lines (surety, trade credit) with established insurer partnerships
 - Phase 3 (12-24 months): Long-tail off-chain lines (liability, D&O) with proper IBNR reserving and actuarial partnerships
@@ -1540,6 +1565,7 @@ This acknowledges that NextBlock's value proposition is strongest where verifica
 This document is build-ready. All decisions are resolved. Hand to the tech team (Marco for smart contracts, Luca for frontend) to begin implementation.
 
 **Build order**:
+
 - Day 1: Smart contracts (Foundry -- MockUSDC, MockOracle, PolicyRegistry, InsuranceVault, VaultFactory, ClaimReceipt)
 - Day 2: Frontend (Next.js + wagmi/viem + Tailwind -- 3 pages + inline sidebar)
 - Day 3: Polish + deploy to Base Sepolia + demo rehearsal

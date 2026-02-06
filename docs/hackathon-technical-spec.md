@@ -1,6 +1,5 @@
 # NextBlock Hackathon -- Technical Specification
 
-**Compiled from**: Tim (CTO) architecture review, Marco (Smart Contract Engineer) contract spec, Luca (Fullstack Engineer) frontend spec
 **Date**: February 5, 2026
 **Source document**: `docs/product/hackathon-prototype-design.md` (V6)
 **Status**: Build-ready -- all decisions confirmed
@@ -62,32 +61,32 @@ Two wallets: Wallet 1 = admin + vault managers + oracle reporter + insurer (all 
 
 ### Critical (Must Resolve Before Build)
 
-| # | Question | Recommendation | Owner |
-|---|----------|---------------|-------|
-| OQ-1 | Where does `timeOffset` live? Design doc 11.5.5 puts it on each vault. Marco recommends PolicyRegistry as single source of truth. | **PolicyRegistry** -- avoids time drift between vaults. One `advanceTime()` call advances all vaults simultaneously. | Marco |
-| OQ-2 | Does `addPolicy` bundle the premium USDC transfer? Or are they two separate calls? | **Separate calls**: `addPolicy(policyId, weight)` by vault manager, then `depositPremium(policyId, amount)` by admin. Different roles, different calls. Cleaner separation of concerns. Deploy script batches them sequentially. | Marco |
-| OQ-3 | Where does `exerciseClaim` live? On ClaimReceipt or InsuranceVault? | **InsuranceVault**: `vault.exerciseClaim(receiptId)`. The vault holds the USDC and needs to update its internal accounting (`totalPendingClaims`, `totalDeployedCapital`). ClaimReceipt is a passive token. | Marco |
-| OQ-4 | How does `_accruedFees()` avoid circularity with `totalAssets()`? | **Pre-fee basis**: Compute `preFeeAssets = balance - unearned - pending` first, then derive fees from that value. `fee = preFeeAssets * feeBps * elapsed / (10000 * 365 days)`. Slightly overcharges but negligible at 0.5-1% annual. Track `accumulatedFees` + `lastFeeTimestamp`, snapshot on state changes. | Marco |
+| #    | Question                                                                                                                          | Recommendation                                                                                                                                                                                                                                                                                                 | Owner |
+| ---- | --------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| OQ-1 | Where does `timeOffset` live? Design doc 11.5.5 puts it on each vault. Marco recommends PolicyRegistry as single source of truth. | **PolicyRegistry** -- avoids time drift between vaults. One `advanceTime()` call advances all vaults simultaneously.                                                                                                                                                                                           | Marco |
+| OQ-2 | Does `addPolicy` bundle the premium USDC transfer? Or are they two separate calls?                                                | **Separate calls**: `addPolicy(policyId, weight)` by vault manager, then `depositPremium(policyId, amount)` by admin. Different roles, different calls. Cleaner separation of concerns. Deploy script batches them sequentially.                                                                               | Marco |
+| OQ-3 | Where does `exerciseClaim` live? On ClaimReceipt or InsuranceVault?                                                               | **InsuranceVault**: `vault.exerciseClaim(receiptId)`. The vault holds the USDC and needs to update its internal accounting (`totalPendingClaims`, `totalDeployedCapital`). ClaimReceipt is a passive token.                                                                                                    | Marco |
+| OQ-4 | How does `_accruedFees()` avoid circularity with `totalAssets()`?                                                                 | **Pre-fee basis**: Compute `preFeeAssets = balance - unearned - pending` first, then derive fees from that value. `fee = preFeeAssets * feeBps * elapsed / (10000 * 365 days)`. Slightly overcharges but negligible at 0.5-1% annual. Track `accumulatedFees` + `lastFeeTimestamp`, snapshot on state changes. | Marco |
 
 ### Important (Resolve During Build)
 
-| # | Question | Recommendation | Owner |
-|---|----------|---------------|-------|
-| OQ-5 | Policy status per-vault or global? | **Per-vault** via `VaultPolicy` struct. A policy can be ACTIVE in Vault A and CLAIMED in Vault B simultaneously. PolicyRegistry tracks global metadata only. | Marco |
-| OQ-6 | What is `_decimalsOffset()` for virtual shares inflation protection? | **12** (bridges the gap between USDC 6 decimals and share token 18 decimals). First deposit of $10K produces ~10,000 shares at ~$1.00/share. OZ 5.x ERC4626 handles this. | Marco |
-| OQ-7 | Should `advanceTime` on PolicyRegistry trigger lazy expiry checks? | **No** -- keep PolicyRegistry as pure data. Vaults check expiry lazily on their next interaction (`_checkExpiredPolicies()` modifier). | Marco |
-| OQ-8 | How does the frontend get vault policy data? Individual reads or multicall? | **Multicall via wagmi's useReadContracts** for batch reads. Avoids N+1 query problem. TanStack Query handles caching. | Luca |
-| OQ-9 | NAV ticker -- real-time polling or client-side interpolation? | **Hybrid**: Poll every 10s for base values. Client-side linear interpolation between polls for smooth NAV ticker. Premium accrual is deterministic (linear), so interpolation is accurate. | Luca |
-| OQ-10 | What happens to `totalDeployedCapital` when a claim reduces it below the vault's target deployment ratio? | **No automatic rebalancing**. Deployed capital decreases. Buffer ratio improves temporarily. Vault manager can manually adjust. For hackathon, this is cosmetic only. | Marco |
-| OQ-11 | Should `resetDemo()` be a contract function? | **No** -- use full re-deployment via `DemoSetup.s.sol` instead. In-contract reset has edge cases (orphaned ClaimReceipts, outstanding shares). Fresh deploy on Anvil takes <30s and guarantees clean state. Remove `resetDemo()` from contracts. | Marco |
+| #     | Question                                                                                                  | Recommendation                                                                                                                                                                                                                                   | Owner |
+| ----- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----- |
+| OQ-5  | Policy status per-vault or global?                                                                        | **Per-vault** via `VaultPolicy` struct. A policy can be ACTIVE in Vault A and CLAIMED in Vault B simultaneously. PolicyRegistry tracks global metadata only.                                                                                     | Marco |
+| OQ-6  | What is `_decimalsOffset()` for virtual shares inflation protection?                                      | **12** (bridges the gap between USDC 6 decimals and share token 18 decimals). First deposit of $10K produces ~10,000 shares at ~$1.00/share. OZ 5.x ERC4626 handles this.                                                                        | Marco |
+| OQ-7  | Should `advanceTime` on PolicyRegistry trigger lazy expiry checks?                                        | **No** -- keep PolicyRegistry as pure data. Vaults check expiry lazily on their next interaction (`_checkExpiredPolicies()` modifier).                                                                                                           | Marco |
+| OQ-8  | How does the frontend get vault policy data? Individual reads or multicall?                               | **Multicall via wagmi's useReadContracts** for batch reads. Avoids N+1 query problem. TanStack Query handles caching.                                                                                                                            | Luca  |
+| OQ-9  | NAV ticker -- real-time polling or client-side interpolation?                                             | **Hybrid**: Poll every 10s for base values. Client-side linear interpolation between polls for smooth NAV ticker. Premium accrual is deterministic (linear), so interpolation is accurate.                                                       | Luca  |
+| OQ-10 | What happens to `totalDeployedCapital` when a claim reduces it below the vault's target deployment ratio? | **No automatic rebalancing**. Deployed capital decreases. Buffer ratio improves temporarily. Vault manager can manually adjust. For hackathon, this is cosmetic only.                                                                            | Marco |
+| OQ-11 | Should `resetDemo()` be a contract function?                                                              | **No** -- use full re-deployment via `DemoSetup.s.sol` instead. In-contract reset has edge cases (orphaned ClaimReceipts, outstanding shares). Fresh deploy on Anvil takes <30s and guarantees clean state. Remove `resetDemo()` from contracts. | Marco |
 
 ### Nice-to-Have (Can Defer)
 
-| # | Question | Notes |
-|---|----------|-------|
-| OQ-12 | Should the frontend show a transaction history log? | Useful for demo but not critical. Could use event logs via `useWatchContractEvent`. |
+| #     | Question                                                | Notes                                                                                                    |
+| ----- | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| OQ-12 | Should the frontend show a transaction history log?     | Useful for demo but not critical. Could use event logs via `useWatchContractEvent`.                      |
 | OQ-13 | Should share token have a custom name/symbol per vault? | Yes: "NextBlock Balanced Core" / "nxbBAL" and "NextBlock DeFi Alpha" / "nxbALPHA". Set via VaultFactory. |
-| OQ-14 | Should `Create Vault` UI be functional or display-only? | If time permits, make it functional (calls VaultFactory). Otherwise, display existing vaults only. |
+| OQ-14 | Should `Create Vault` UI be functional or display-only? | If time permits, make it functional (calls VaultFactory). Otherwise, display existing vaults only.       |
 
 ---
 
@@ -95,14 +94,15 @@ Two wallets: Wallet 1 = admin + vault managers + oracle reporter + insurer (all 
 
 ### Smart Contracts
 
-| Component | Version | Notes |
-|-----------|---------|-------|
-| **Solidity** | 0.8.24+ | Stable, well-audited compiler version |
-| **Foundry** | Latest | forge (build/test), anvil (local chain), cast (CLI interactions) |
-| **OpenZeppelin** | v5.5.0 | ERC4626, ERC721, ERC20, Ownable, ReentrancyGuard |
-| **forge-std** | Latest | Test utilities, console.log, vm cheatcodes |
+| Component        | Version | Notes                                                            |
+| ---------------- | ------- | ---------------------------------------------------------------- |
+| **Solidity**     | 0.8.24+ | Stable, well-audited compiler version                            |
+| **Foundry**      | Latest  | forge (build/test), anvil (local chain), cast (CLI interactions) |
+| **OpenZeppelin** | v5.5.0  | ERC4626, ERC721, ERC20, Ownable, ReentrancyGuard                 |
+| **forge-std**    | Latest  | Test utilities, console.log, vm cheatcodes                       |
 
 **Project structure**:
+
 ```
 contracts/
   src/
@@ -128,18 +128,19 @@ contracts/
 
 ### Frontend
 
-| Component | Version | Notes |
-|-----------|---------|-------|
-| **Next.js** | 16.1.6 (App Router) | Server components for static content, client for wallet interaction |
-| **React** | 19.2.3 | Latest stable |
-| **wagmi** | v2 | React hooks for Ethereum: useReadContract, useWriteContract, useAccount |
-| **viem** | v2 | Low-level Ethereum client, used by wagmi internally |
-| **RainbowKit** | v2 | Wallet connection modal (MetaMask, WalletConnect) |
-| **Tailwind CSS** | v4 | Utility-first styling |
-| **TanStack Query** | v5 | Cache layer for contract reads (managed by wagmi) |
-| **TypeScript** | 5.x | Strict mode |
+| Component          | Version             | Notes                                                                   |
+| ------------------ | ------------------- | ----------------------------------------------------------------------- |
+| **Next.js**        | 16.1.6 (App Router) | Server components for static content, client for wallet interaction     |
+| **React**          | 19.2.3              | Latest stable                                                           |
+| **wagmi**          | v2                  | React hooks for Ethereum: useReadContract, useWriteContract, useAccount |
+| **viem**           | v2                  | Low-level Ethereum client, used by wagmi internally                     |
+| **RainbowKit**     | v2                  | Wallet connection modal (MetaMask, WalletConnect)                       |
+| **Tailwind CSS**   | v4                  | Utility-first styling                                                   |
+| **TanStack Query** | v5                  | Cache layer for contract reads (managed by wagmi)                       |
+| **TypeScript**     | 5.x                 | Strict mode                                                             |
 
 **Project structure**:
+
 ```
 frontend/
   src/
@@ -201,15 +202,15 @@ frontend/
 
 ### Design Tokens
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| **On-chain** color | Emerald (`#10B981`) | P1 BTC Protection badge, verification labels |
-| **Oracle** color | Amber (`#F59E0B`) | P2 Flight Delay badge |
-| **Off-chain** color | Slate (`#64748B`) | P3 Commercial Fire badge |
-| **Active** status | Green | Policy active |
-| **Claimed** status | Red | Policy claimed |
-| **Expired** status | Gray | Policy expired |
-| **Font** | System font stack | Monospace for numbers (Inter not imported due to DNS restrictions) |
+| Token               | Value               | Usage                                                              |
+| ------------------- | ------------------- | ------------------------------------------------------------------ |
+| **On-chain** color  | Emerald (`#10B981`) | P1 BTC Protection badge, verification labels                       |
+| **Oracle** color    | Amber (`#F59E0B`)   | P2 Flight Delay badge                                              |
+| **Off-chain** color | Slate (`#64748B`)   | P3 Commercial Fire badge                                           |
+| **Active** status   | Green               | Policy active                                                      |
+| **Claimed** status  | Red                 | Policy claimed                                                     |
+| **Expired** status  | Gray                | Policy expired                                                     |
+| **Font**            | System font stack   | Monospace for numbers (Inter not imported due to DNS restrictions) |
 
 ---
 
@@ -236,6 +237,7 @@ ClaimReceipt (ERC-721, minted by InsuranceVault, burned on exercise)
 ### 4.2 Contract Interfaces
 
 #### MockUSDC
+
 ```solidity
 // ERC20 with mint function for demo
 contract MockUSDC is ERC20 {
@@ -246,6 +248,7 @@ contract MockUSDC is ERC20 {
 ```
 
 #### MockOracle
+
 ```solidity
 contract MockOracle is Ownable {
     int256 public btcPrice;             // 8 decimals, int256 (Chainlink convention)
@@ -266,6 +269,7 @@ contract MockOracle is Ownable {
 **Events**: `BtcPriceUpdated(int256 price)`, `FlightStatusUpdated(bool delayed)`
 
 #### PolicyRegistry
+
 ```solidity
 contract PolicyRegistry is Ownable {
     enum VerificationType { ON_CHAIN, ORACLE_DEPENDENT, OFF_CHAIN }
@@ -307,6 +311,7 @@ contract PolicyRegistry is Ownable {
 Note: Policy IDs start from 0 (first registered policy has ID 0). `getPolicyCount()` returns `nextPolicyId`.
 
 #### InsuranceVault (the critical contract)
+
 ```solidity
 contract InsuranceVault is ERC4626, Ownable, ReentrancyGuard {
     struct VaultPolicy {
@@ -396,6 +401,7 @@ contract InsuranceVault is ERC4626, Ownable, ReentrancyGuard {
 ```
 
 **Custom errors** (gas-efficient, replaces require strings):
+
 ```solidity
 error InsuranceVault__PolicyNotActive(uint256 policyId);
 error InsuranceVault__PolicyAlreadyAdded(uint256 policyId);
@@ -413,6 +419,7 @@ error InsuranceVault__ClaimShortfall(uint256 receiptId, uint256 claimAmount, uin
 ```
 
 #### VaultFactory
+
 ```solidity
 contract VaultFactory is Ownable {
     // Infrastructure addresses (set once at deployment, shared by all vaults)
@@ -443,6 +450,7 @@ contract VaultFactory is Ownable {
 ```
 
 #### ClaimReceipt
+
 ```solidity
 contract ClaimReceipt is ERC721, Ownable {
     struct Receipt {
@@ -485,6 +493,7 @@ contract ClaimReceipt is ERC721, Ownable {
 ### 4.3 Key Implementation Details
 
 #### totalAssets() Implementation
+
 ```solidity
 function totalAssets() public view override returns (uint256) {
     uint256 balance = IERC20(asset()).balanceOf(address(this));
@@ -508,6 +517,7 @@ function totalAssets() public view override returns (uint256) {
 ```
 
 **Walkthrough with numbers** (Vault A, day 30):
+
 ```
 USDC.balanceOf(vault) = $90,000 (investors) + $6,100 (premiums) = $96,100
 _totalUnearnedPremiums():
@@ -523,6 +533,7 @@ Share price = $91,795 / 90,000 shares = $1.0199
 ```
 
 #### Fee Circularity Fix
+
 The problem: `totalAssets()` depends on `_accruedFees()`, but fees depend on `totalAssets()`.
 
 Solution: Pre-fee basis computation. In `totalAssets()`, compute `preFeeAssets = balance - unearned - pending` first, then derive fees from that value. The `_accruedFees(preFeeAssets)` function receives the pre-fee basis as a parameter.
@@ -552,13 +563,17 @@ function _accrueFeesInternal() internal {
 ```
 
 #### Claimed Policy Premium Handling
+
 When a claim triggers, premium accrual STOPS. The unearned premium for a claimed policy is set to 0 (the premium is considered consumed by the claim event). In `_totalUnearnedPremiums()`, if `vaultPolicies[policyId].claimed == true`, that policy contributes 0 to unearned premiums. This is consistent with the design doc ("premium accrual stops on claim").
 
 #### P3 Partial Claim: Single Claim Consumes Policy
+
 For P3 (off-chain), the insurer can submit a partial amount (e.g., $35K of $40K coverage). However, the policy is **fully consumed** by a single claim event: `claimed = true`, remaining $5K coverage is forfeited. No multi-claim support for the hackathon. This keeps the `claimed` boolean simple -- no need for `totalClaimedAmount` tracking.
 
 #### Shared Policy Pull Model
+
 When P1 is added to both vaults:
+
 ```
 // Step 1: Vault manager adds policy
 Vault A: addPolicy(P1, 4000)  // 40% weight
@@ -646,13 +661,13 @@ This section maps every entity to their actions, the exact contract calls behind
 
 ### 5.1 Entity Summary
 
-| Entity | Goal | Contract Role | Frontend Context |
-|--------|------|--------------|------------------|
-| **Investor** | Deposit, earn yield, withdraw | Public (no special role) | Discovery, Detail, Modal |
-| **Vault Manager** | Curate policies, set allocations | `vaultManager` on InsuranceVault | Admin (vault mgmt section) |
-| **Insurer** | Receive claim payouts via receipts | `insurerAdmin` on InsuranceVault | Admin (claim triggers + receipts) |
-| **Protocol Admin** | Deploy, register, fund, control time | `owner` on all contracts | Admin (all sections) |
-| **Oracle Reporter** | Report oracle-dependent events (P2) | `oracleReporter` on InsuranceVault | Admin (claim triggers) |
+| Entity              | Goal                                 | Contract Role                      | Frontend Context                  |
+| ------------------- | ------------------------------------ | ---------------------------------- | --------------------------------- |
+| **Investor**        | Deposit, earn yield, withdraw        | Public (no special role)           | Discovery, Detail, Modal          |
+| **Vault Manager**   | Curate policies, set allocations     | `vaultManager` on InsuranceVault   | Admin (vault mgmt section)        |
+| **Insurer**         | Receive claim payouts via receipts   | `insurerAdmin` on InsuranceVault   | Admin (claim triggers + receipts) |
+| **Protocol Admin**  | Deploy, register, fund, control time | `owner` on all contracts           | Admin (all sections)              |
+| **Oracle Reporter** | Report oracle-dependent events (P2)  | `oracleReporter` on InsuranceVault | Admin (claim triggers)            |
 
 ### 5.2 Entity-Action Matrix (Access Control Reference)
 
@@ -835,6 +850,7 @@ Note: The oracle reporter can ONLY call `reportEvent` -- they cannot exercise cl
 These are concrete test scenarios with expected numeric results. Use them to verify correctness during integration and to rehearse the demo.
 
 **Assumptions for all flows:**
+
 - Vault A (Balanced Core): 80/20 buffer, 0.5% annual fee, P1(40%) + P2(20%) + P3(40%)
 - Vault B (DeFi Alpha): 85/15 buffer, 1.0% annual fee, P1(60%) + P2(40%)
 - Investor deposits $10,000 USDC into Vault A
@@ -1048,15 +1064,15 @@ TIME    WHO         ACTION                          KEY METRIC TO SHOW
 
 ### 5.9 Claim Trigger Comparison
 
-| | P1: BTC Protection | P2: Flight Delay | P3: Commercial Fire |
-|---|---|---|---|
-| **Verification** | On-chain | Oracle-dependent | Off-chain |
-| **Who triggers** | ANYONE | `oracleReporter` | `insurerAdmin` |
-| **Contract call** | `vault.checkClaim(policyId)` | `vault.reportEvent(policyId)` | `vault.submitClaim(policyId, amount)` |
-| **Oracle read** | `oracle.getBtcPrice()` | `oracle.getFlightStatus()` | None |
-| **Trigger condition** | `price <= threshold` | `delayed == true` | Insurer's assessment |
-| **Claim amount** | Full coverage ($50K) | Full coverage ($15K) | Partial (assessed amt) |
-| **Admin setup** | `setBtcPrice(75000e8)` | `setFlightStatus(true)` | No setup needed |
+|                       | P1: BTC Protection           | P2: Flight Delay              | P3: Commercial Fire                   |
+| --------------------- | ---------------------------- | ----------------------------- | ------------------------------------- |
+| **Verification**      | On-chain                     | Oracle-dependent              | Off-chain                             |
+| **Who triggers**      | ANYONE                       | `oracleReporter`              | `insurerAdmin`                        |
+| **Contract call**     | `vault.checkClaim(policyId)` | `vault.reportEvent(policyId)` | `vault.submitClaim(policyId, amount)` |
+| **Oracle read**       | `oracle.getBtcPrice()`       | `oracle.getFlightStatus()`    | None                                  |
+| **Trigger condition** | `price <= threshold`         | `delayed == true`             | Insurer's assessment                  |
+| **Claim amount**      | Full coverage ($50K)         | Full coverage ($15K)          | Partial (assessed amt)                |
+| **Admin setup**       | `setBtcPrice(75000e8)`       | `setFlightStatus(true)`       | No setup needed                       |
 
 ### 5.10 Claim Lifecycle -- Transaction Chain
 
@@ -1075,12 +1091,12 @@ vault.checkClaim(1) / reportEvent(2) / submitClaim(3, amount)
 
 **State after trigger:**
 
-| Contract | Change |
-|----------|--------|
-| InsuranceVault | `totalPendingClaims += claimAmt`, `vaultPolicies[id].claimed = true` |
-| ClaimReceipt | New NFT minted to insurer, receipt metadata stored |
-| `totalAssets()` | Drops by `claimAmount` (pendingClaims deduction) |
-| Share price | Drops proportionally |
+| Contract        | Change                                                               |
+| --------------- | -------------------------------------------------------------------- |
+| InsuranceVault  | `totalPendingClaims += claimAmt`, `vaultPolicies[id].claimed = true` |
+| ClaimReceipt    | New NFT minted to insurer, receipt metadata stored                   |
+| `totalAssets()` | Drops by `claimAmount` (pendingClaims deduction)                     |
+| Share price     | Drops proportionally                                                 |
 
 **Step 2: EXERCISE** (insurer calls, any time after trigger)
 
@@ -1102,6 +1118,7 @@ vault.exerciseClaim(receiptId)                  [nonReentrant]
 **NAV impact of exercise: NET ZERO** (balance drops, pendingClaims drops by same amount).
 
 **Shared policy (P1 in both vaults):**
+
 ```
 BTC crashes -> admin fires:
   vaultA.checkClaim(1) -> Receipt #1 minted, Vault A NAV drops
@@ -1162,35 +1179,36 @@ InsuranceVault ──reads──> PolicyRegistry
 
 ### 5.13 Frontend Event & Polling Strategy
 
-| Data | Method | Frequency | Hook |
-|------|--------|-----------|------|
-| Vault TVL, share price | Poll `getVaultInfo()` | 10s | `useReadContract` refetchInterval |
-| NAV ticker (smooth) | Client-side linear interpolation | 1s | Local state between polls |
-| Policy status/expiry | Poll `getVaultPolicy(id)` | 10s | `useReadContracts` batch |
-| User balance | Watch blocks + after tx | On block | `useReadContract` watch: true |
-| Claim events | Event subscription | Real-time | `useWatchContractEvent(ClaimTriggered)` |
-| Time changes | Event subscription | Real-time | `useWatchContractEvent(TimeAdvanced)` |
+| Data                   | Method                           | Frequency | Hook                                    |
+| ---------------------- | -------------------------------- | --------- | --------------------------------------- |
+| Vault TVL, share price | Poll `getVaultInfo()`            | 10s       | `useReadContract` refetchInterval       |
+| NAV ticker (smooth)    | Client-side linear interpolation | 1s        | Local state between polls               |
+| Policy status/expiry   | Poll `getVaultPolicy(id)`        | 10s       | `useReadContracts` batch                |
+| User balance           | Watch blocks + after tx          | On block  | `useReadContract` watch: true           |
+| Claim events           | Event subscription               | Real-time | `useWatchContractEvent(ClaimTriggered)` |
+| Time changes           | Event subscription               | Real-time | `useWatchContractEvent(TimeAdvanced)`   |
 
 **Cache invalidation on events:**
+
 - `ClaimTriggered` -> invalidate vault info, policy status, totalAssets, maxWithdraw
 - `TimeAdvanced` -> invalidate ALL vault reads (NAV, policies, fees all change)
 - `Deposit`/`Withdraw` -> invalidate vault info, user balances
 
 ### 5.14 Transaction Summary by Page
 
-| Page | Action | Write Call(s) | Read Call(s) After |
-|------|--------|---------------|-------------------|
-| **Discovery** | (view) | -- | `factory.getVaults()`, `vault.getVaultInfo()` x2 |
-| **Detail** | (view) | -- | `getVaultInfo()`, `getPolicyIds()`, `getVaultPolicy(id)` x N |
-| **Sidebar** | Deposit | `USDC.approve` + `vault.deposit` | `balanceOf`, `getVaultInfo()` |
-| **Sidebar** | Withdraw | `vault.withdraw` | `balanceOf`, `USDC.balanceOf`, `getVaultInfo()` |
-| **Admin** | Advance Time | `registry.advanceTime(sec)` | `currentTime()`, all vault info |
-| **Admin** | Set Oracle | `oracle.setBtcPrice` / `setFlightStatus` | oracle reads |
-| **Admin** | Check Claim | `vault.checkClaim(id)` | `getVaultInfo()`, `getVaultPolicy(id)` |
-| **Admin** | Report Event | `vault.reportEvent(id)` | same |
-| **Admin** | Submit Claim | `vault.submitClaim(id, amt)` | same |
-| **Admin** | Exercise | `vault.exerciseClaim(receiptId)` | `getVaultInfo()`, `USDC.balanceOf` |
-| **Admin** | Reset | Re-deploy via `DemoSetup.s.sol` (no `resetDemo` contract function -- full redeployment only) | full refresh (new contract addresses) |
+| Page          | Action       | Write Call(s)                                                                                | Read Call(s) After                                           |
+| ------------- | ------------ | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| **Discovery** | (view)       | --                                                                                           | `factory.getVaults()`, `vault.getVaultInfo()` x2             |
+| **Detail**    | (view)       | --                                                                                           | `getVaultInfo()`, `getPolicyIds()`, `getVaultPolicy(id)` x N |
+| **Sidebar**   | Deposit      | `USDC.approve` + `vault.deposit`                                                             | `balanceOf`, `getVaultInfo()`                                |
+| **Sidebar**   | Withdraw     | `vault.withdraw`                                                                             | `balanceOf`, `USDC.balanceOf`, `getVaultInfo()`              |
+| **Admin**     | Advance Time | `registry.advanceTime(sec)`                                                                  | `currentTime()`, all vault info                              |
+| **Admin**     | Set Oracle   | `oracle.setBtcPrice` / `setFlightStatus`                                                     | oracle reads                                                 |
+| **Admin**     | Check Claim  | `vault.checkClaim(id)`                                                                       | `getVaultInfo()`, `getVaultPolicy(id)`                       |
+| **Admin**     | Report Event | `vault.reportEvent(id)`                                                                      | same                                                         |
+| **Admin**     | Submit Claim | `vault.submitClaim(id, amt)`                                                                 | same                                                         |
+| **Admin**     | Exercise     | `vault.exerciseClaim(receiptId)`                                                             | `getVaultInfo()`, `USDC.balanceOf`                           |
+| **Admin**     | Reset        | Re-deploy via `DemoSetup.s.sol` (no `resetDemo` contract function -- full redeployment only) | full refresh (new contract addresses)                        |
 
 ### 5.15 Demo Transaction Log (5-minute run)
 
@@ -1221,6 +1239,7 @@ LIVE DEMO:
 ### 6.1 Page Components
 
 #### Page 1: Vault Discovery (`/`)
+
 ```
 VaultDiscoveryPage
   +-- Header (logo, wallet connect)
@@ -1241,6 +1260,7 @@ Note: `UserPositions` component was removed. The page shows vault cards and a "H
 **Contract reads**: `VaultFactory.getVaults()` (returns full address array), per vault: `vault.getVaultInfo()`, `balanceOf(user)`.
 
 #### Page 2: Vault Detail (`/vault/[address]`)
+
 ```
 VaultDetailPage
   +-- VaultHeader (name, manager, APY, TVL, fee)
@@ -1281,6 +1301,7 @@ VaultDetailPage
 The deposit/withdraw UI is an **inline sidebar** on the Vault Detail page (right side), not a modal. This follows the Morpho Finance pattern: vault details on the left, action panel fixed on the right. The sidebar is always visible when viewing a vault. Light theme.
 
 **Deposit state machine**:
+
 ```
 IDLE          -> user enters amount, clicks "Deposit"
 APPROVING     -> tx: USDC.approve(vault, amount) -- waiting for confirmation
@@ -1291,6 +1312,7 @@ ERROR         -> show error, allow retry
 ```
 
 #### Page 3: Admin / Curator (`/admin`)
+
 ```
 AdminPage
   +-- Section: Time Controls
@@ -1323,14 +1345,14 @@ Note: `WithdrawTab.tsx` does not exist as a separate component -- withdraw is in
 
 ### 6.2 wagmi Hooks Strategy
 
-| Hook | Type | Usage |
-|------|------|-------|
-| `useReadContract` | Read | Single contract value (totalAssets, balanceOf) |
-| `useReadContracts` | Read (batch) | Multiple values in one RPC call (vault detail page) |
-| `useWriteContract` | Write | Deposit, withdraw, approve, trigger claims |
-| `useWatchContractEvent` | Event listener | ClaimTriggered, TimeAdvanced, Deposited events |
-| `useAccount` | Wallet | Connected address, chain, connection status |
-| `useChainId` | Chain | Current chain ID for contract address lookup |
+| Hook                    | Type           | Usage                                               |
+| ----------------------- | -------------- | --------------------------------------------------- |
+| `useReadContract`       | Read           | Single contract value (totalAssets, balanceOf)      |
+| `useReadContracts`      | Read (batch)   | Multiple values in one RPC call (vault detail page) |
+| `useWriteContract`      | Write          | Deposit, withdraw, approve, trigger claims          |
+| `useWatchContractEvent` | Event listener | ClaimTriggered, TimeAdvanced, Deposited events      |
+| `useAccount`            | Wallet         | Connected address, chain, connection status         |
+| `useChainId`            | Chain          | Current chain ID for contract address lookup        |
 
 ### 6.3 Data Formatting Helpers
 
@@ -1362,27 +1384,27 @@ VERIFICATION_CONFIG                               // Maps verification type enum
 
 ### Overview
 
-| Phase | Agent | Duration | Focus |
-|-------|-------|----------|-------|
-| Day 1 | Marco (Smart Contracts) | ~10-11 hours | All 6 contracts + unit tests |
-| Day 2 | Luca (Frontend) | ~11-12 hours | 3 pages + 1 modal + hooks |
-| Day 2 evening + Day 3 | Both | ~8-10 hours | Integration + polish + deploy |
+| Phase                 | Agent                   | Duration     | Focus                         |
+| --------------------- | ----------------------- | ------------ | ----------------------------- |
+| Day 1                 | Marco (Smart Contracts) | ~10-11 hours | All 6 contracts + unit tests  |
+| Day 2                 | Luca (Frontend)         | ~11-12 hours | 3 pages + 1 modal + hooks     |
+| Day 2 evening + Day 3 | Both                    | ~8-10 hours  | Integration + polish + deploy |
 
 ### Day 1: Marco -- Smart Contract Build
 
-| Task | Description | Duration | Dependencies |
-|------|-------------|----------|--------------|
-| **M1** | Project setup: `forge init`, install OZ, configure `foundry.toml` | 30 min | None |
-| **M2** | `MockUSDC.sol` + `MockOracle.sol` (standalone, simple) | 1 hour | M1 |
-| **M3** | `ClaimReceipt.sol` (ERC-721 with mint/exercise/burn) | 1 hour | M1 |
-| **M4** | `PolicyRegistry.sol` (policy storage, timeOffset, currentTime, oracle reads) | 1.5 hours | M2 |
-| **M5** | `InsuranceVault.sol` -- Core ERC4626 (deposit/withdraw/totalAssets) | 2 hours | M2, M4 |
-| **M6** | `InsuranceVault.sol` -- Policy management + premium handling | 1 hour | M5 |
-| **M7** | `InsuranceVault.sol` -- Three claim paths + ClaimReceipt integration | 1.5 hours | M5, M3, M6 |
-| **M8** | `InsuranceVault.sol` -- Fee accrual, maxWithdraw override, edge cases | 1 hour | M5, M7 |
-| **M9** | `VaultFactory.sol` (deploys configured vault instances) | 1 hour | M5 |
-| **M10** | Unit tests for all contracts | 1.5 hours | M2-M9 |
-| **M11** | `Deploy.s.sol` + `DemoSetup.s.sol` (deployment + demo state scripts) | 1 hour | M9, M10 |
+| Task    | Description                                                                  | Duration  | Dependencies |
+| ------- | ---------------------------------------------------------------------------- | --------- | ------------ |
+| **M1**  | Project setup: `forge init`, install OZ, configure `foundry.toml`            | 30 min    | None         |
+| **M2**  | `MockUSDC.sol` + `MockOracle.sol` (standalone, simple)                       | 1 hour    | M1           |
+| **M3**  | `ClaimReceipt.sol` (ERC-721 with mint/exercise/burn)                         | 1 hour    | M1           |
+| **M4**  | `PolicyRegistry.sol` (policy storage, timeOffset, currentTime, oracle reads) | 1.5 hours | M2           |
+| **M5**  | `InsuranceVault.sol` -- Core ERC4626 (deposit/withdraw/totalAssets)          | 2 hours   | M2, M4       |
+| **M6**  | `InsuranceVault.sol` -- Policy management + premium handling                 | 1 hour    | M5           |
+| **M7**  | `InsuranceVault.sol` -- Three claim paths + ClaimReceipt integration         | 1.5 hours | M5, M3, M6   |
+| **M8**  | `InsuranceVault.sol` -- Fee accrual, maxWithdraw override, edge cases        | 1 hour    | M5, M7       |
+| **M9**  | `VaultFactory.sol` (deploys configured vault instances)                      | 1 hour    | M5           |
+| **M10** | Unit tests for all contracts                                                 | 1.5 hours | M2-M9        |
+| **M11** | `Deploy.s.sol` + `DemoSetup.s.sol` (deployment + demo state scripts)         | 1 hour    | M9, M10      |
 
 **Critical path**: M1 -> M2 -> M4 -> M5 -> M6 -> M7 -> M8 (InsuranceVault is the bottleneck)
 
@@ -1390,33 +1412,33 @@ VERIFICATION_CONFIG                               // Maps verification type enum
 
 ### Day 2: Luca -- Frontend Build
 
-| Task | Description | Duration | Dependencies |
-|------|-------------|----------|--------------|
-| **L0** | Project setup: Next.js 15, wagmi v2, RainbowKit, Tailwind, TypeScript config | 1 hour | None |
-| **L1** | Wallet connection + chain config (Anvil / Base Sepolia) | 30 min | L0 |
-| **L2** | Vault Discovery page (2 vault cards, TVL, APY, verification badges) | 2 hours | L1, contracts deployed |
-| **L3** | Vault Detail page (policy table, allocation bar, buffer viz, yield ticker) | 2.5 hours | L2 |
-| **L4** | Deposit/Withdraw modal (approve+deposit state machine, share calculation) | 2 hours | L3 |
-| **L5** | Admin page (time controls, oracle controls, 3 claim triggers, exercise, reset) | 2.5 hours | L4 |
-| **L6** | Polish: loading states, error handling, responsive tweaks, smooth animations | 1.5 hours | L5 |
+| Task   | Description                                                                    | Duration  | Dependencies           |
+| ------ | ------------------------------------------------------------------------------ | --------- | ---------------------- |
+| **L0** | Project setup: Next.js 15, wagmi v2, RainbowKit, Tailwind, TypeScript config   | 1 hour    | None                   |
+| **L1** | Wallet connection + chain config (Anvil / Base Sepolia)                        | 30 min    | L0                     |
+| **L2** | Vault Discovery page (2 vault cards, TVL, APY, verification badges)            | 2 hours   | L1, contracts deployed |
+| **L3** | Vault Detail page (policy table, allocation bar, buffer viz, yield ticker)     | 2.5 hours | L2                     |
+| **L4** | Deposit/Withdraw modal (approve+deposit state machine, share calculation)      | 2 hours   | L3                     |
+| **L5** | Admin page (time controls, oracle controls, 3 claim triggers, exercise, reset) | 2.5 hours | L4                     |
+| **L6** | Polish: loading states, error handling, responsive tweaks, smooth animations   | 1.5 hours | L5                     |
 
 **Blocker**: L2 depends on deployed contracts + ABIs. Marco should export ABIs by end of Day 1.
 
 ### Day 2 Evening + Day 3: Integration & Polish
 
-| Task | Description | Duration | Owner |
-|------|-------------|----------|-------|
-| **I1** | Copy ABIs from Foundry to frontend config | 15 min | Luca |
-| **I2** | Deploy contracts to Anvil, wire frontend to local chain | 30 min | Marco |
-| **I3** | End-to-end: deposit flow (approve + deposit + verify shares) | 30 min | Both |
-| **I4** | End-to-end: yield accrual (advance time, verify NAV increase) | 30 min | Both |
-| **I5** | End-to-end: all 3 claim triggers (verify receipt mint, NAV drop) | 1 hour | Both |
-| **I6** | End-to-end: claim exercise (verify USDC transfer, receipt burn) | 30 min | Both |
-| **I7** | End-to-end: withdrawal flow (verify buffer enforcement) | 30 min | Both |
-| **I8** | Demo script rehearsal: run through full 5-min demo narrative | 1 hour | Both |
-| **I9** | Deploy to Base Sepolia (if target chain) | 1 hour | Marco |
-| **I10** | Frontend build + deploy (Vercel or static) | 30 min | Luca |
-| **I11** | Final polish: fix any UX issues found during rehearsal | 2 hours | Both |
+| Task    | Description                                                      | Duration | Owner |
+| ------- | ---------------------------------------------------------------- | -------- | ----- |
+| **I1**  | Copy ABIs from Foundry to frontend config                        | 15 min   | Luca  |
+| **I2**  | Deploy contracts to Anvil, wire frontend to local chain          | 30 min   | Marco |
+| **I3**  | End-to-end: deposit flow (approve + deposit + verify shares)     | 30 min   | Both  |
+| **I4**  | End-to-end: yield accrual (advance time, verify NAV increase)    | 30 min   | Both  |
+| **I5**  | End-to-end: all 3 claim triggers (verify receipt mint, NAV drop) | 1 hour   | Both  |
+| **I6**  | End-to-end: claim exercise (verify USDC transfer, receipt burn)  | 30 min   | Both  |
+| **I7**  | End-to-end: withdrawal flow (verify buffer enforcement)          | 30 min   | Both  |
+| **I8**  | Demo script rehearsal: run through full 5-min demo narrative     | 1 hour   | Both  |
+| **I9**  | Deploy to Base Sepolia (if target chain)                         | 1 hour   | Marco |
+| **I10** | Frontend build + deploy (Vercel or static)                       | 30 min   | Luca  |
+| **I11** | Final polish: fix any UX issues found during rehearsal           | 2 hours  | Both  |
 
 ---
 
@@ -1444,16 +1466,19 @@ uint256 constant NINETY_DAYS = 90 days;
 ### Unit Tests (Marco, Day 1)
 
 #### MockUSDC Tests
+
 - `test_mint`: Mint tokens, verify balance
 - `test_decimals`: Returns 6
 - `test_transfer`: Standard ERC20 transfer
 
 #### MockOracle Tests
+
 - `test_setBtcPrice`: Admin sets price, verify read
 - `test_setFlightDelayed`: Toggle boolean
 - `test_onlyAdmin`: Non-admin reverts
 
 #### PolicyRegistry Tests
+
 - `test_registerPolicy`: Register, verify stored data
 - `test_currentTime`: Returns `block.timestamp + timeOffset`
 - `test_advanceTime`: Offset increases, currentTime updates
@@ -1465,6 +1490,7 @@ uint256 constant NINETY_DAYS = 90 days;
 #### InsuranceVault Tests (THE critical test suite)
 
 **Deposit/Withdraw:**
+
 - `test_deposit`: Deposit USDC, receive shares at correct rate
 - `test_withdraw`: Withdraw at NAV, receive correct USDC
 - `test_maxWithdraw_bufferEnforcement`: Cannot withdraw more than available buffer
@@ -1472,6 +1498,7 @@ uint256 constant NINETY_DAYS = 90 days;
 - `test_depositZero_reverts`: Zero deposit reverts
 
 **Premium Mechanics:**
+
 - `test_addPolicy_transfersPremium`: Premium USDC moves to vault
 - `test_unearnedPremium_day0`: Full premium is unearned at start
 - `test_unearnedPremium_halfDuration`: Half premium earned at midpoint
@@ -1479,6 +1506,7 @@ uint256 constant NINETY_DAYS = 90 days;
 - `test_totalAssets_increasesWithTime`: NAV rises as premiums earn
 
 **Claim Paths:**
+
 - `test_triggerOnChain_btcBelow`: BTC below threshold triggers claim
 - `test_triggerOnChain_btcAbove_reverts`: BTC above threshold reverts
 - `test_triggerOnChain_permissionless`: Any address can trigger
@@ -1491,6 +1519,7 @@ uint256 constant NINETY_DAYS = 90 days;
 - `test_doubleClaim_reverts`: Already-claimed policy reverts
 
 **ClaimReceipt:**
+
 - `test_claimMintsReceipt`: Receipt minted to insurer on trigger
 - `test_receiptStoresInsurer`: Receipt.insurer field set correctly on mint
 - `test_exerciseClaim_transfersUSDC`: Exercise sends USDC to insurer
@@ -1505,11 +1534,13 @@ uint256 constant NINETY_DAYS = 90 days;
 - `test_exerciseClaim_restoresNAV`: Exercise is net-zero on totalAssets
 
 **Premium Deposits:**
+
 - `test_depositPremium_separate`: depositPremium is separate call from addPolicy
 - `test_depositPremium_onlyOwner`: Non-owner reverts
 - `test_depositPremium_policyNotInVault_reverts`: Policy not added to vault reverts
 
 **Fee Mechanics:**
+
 - `test_accruedFees_reducesNAV`: Fees deduct from totalAssets
 - `test_feeSnapshot_updates`: Snapshot refreshes on state changes
 - `test_feeRate_vaultA_vs_vaultB`: Different rates produce different fees
@@ -1517,10 +1548,12 @@ uint256 constant NINETY_DAYS = 90 days;
 - `test_lastFeeTimestamp_initialized`: Set to currentTime() at deployment
 
 **Shared Policy:**
+
 - `test_sharedPolicy_independentClaims`: P1 in both vaults, trigger in A doesn't affect B
 - `test_sharedPolicy_independentPremiums`: Each vault has own premium deposit
 
 **Edge Cases:**
+
 - `test_totalAssets_floorAtZero`: Deductions > balance returns 0
 - `test_allPoliciesExpired_withdrawAll`: Full withdrawal when no active policies
 - `test_claimExceedsBalance_capsAtBalance`: Payout capped if vault underfunded
@@ -1529,10 +1562,12 @@ uint256 constant NINETY_DAYS = 90 days;
 - `test_addPolicy_nonexistentPolicy_reverts`: Adding policy not in registry reverts
 
 **Fuzz Tests:**
+
 - `testFuzz_depositWithdraw_roundTrip(uint256 amount)`: Deposit then withdraw returns ~same (minus fees)
 - `testFuzz_totalAssets_neverReverts(uint256 timeElapsed)`: totalAssets() never reverts regardless of state
 
 #### VaultFactory Tests
+
 - `test_createVault`: Factory deploys vault with correct config
 - `test_getVault`: Retrieves deployed vault address
 - `test_vaultCount`: Tracks number of vaults
@@ -1547,24 +1582,24 @@ uint256 constant NINETY_DAYS = 90 days;
 
 ## 9. Security Concerns
 
-| # | Concern | Mitigation |
-|---|---------|------------|
-| S1 | **Reentrancy on exerciseClaim** | Use `nonReentrant` modifier (OZ ReentrancyGuard). State changes before external USDC transfer. |
-| S2 | **First-depositor inflation attack** | Use OZ 5.x `_decimalsOffset()` override (returns 12). Virtual shares prevent manipulation. |
-| S3 | **totalAssets() underflow** | Floor at zero (`if (deductions >= balance) return 0`). Never revert. |
-| S4 | **Unauthorized claim triggers** | Access control per path: P1 permissionless, P2 requires ORACLE_REPORTER, P3 requires INSURER_ADMIN. |
-| S5 | **Double claim / double exercise** | `VaultPolicy.claimed` flag prevents re-trigger. ClaimReceipt.exercised flag + burn prevents re-exercise. |
-| S6 | **USDC approve race condition** | Frontend uses `approve(0)` then `approve(amount)` pattern, or set exact allowance. Not a smart contract concern. |
-| S7 | **ClaimReceipt minted by unauthorized contract** | ClaimReceipt maintains a mapping of authorized vault addresses. Only registered vaults can mint. |
+| #   | Concern                                          | Mitigation                                                                                                       |
+| --- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| S1  | **Reentrancy on exerciseClaim**                  | Use `nonReentrant` modifier (OZ ReentrancyGuard). State changes before external USDC transfer.                   |
+| S2  | **First-depositor inflation attack**             | Use OZ 5.x `_decimalsOffset()` override (returns 12). Virtual shares prevent manipulation.                       |
+| S3  | **totalAssets() underflow**                      | Floor at zero (`if (deductions >= balance) return 0`). Never revert.                                             |
+| S4  | **Unauthorized claim triggers**                  | Access control per path: P1 permissionless, P2 requires ORACLE_REPORTER, P3 requires INSURER_ADMIN.              |
+| S5  | **Double claim / double exercise**               | `VaultPolicy.claimed` flag prevents re-trigger. ClaimReceipt.exercised flag + burn prevents re-exercise.         |
+| S6  | **USDC approve race condition**                  | Frontend uses `approve(0)` then `approve(amount)` pattern, or set exact allowance. Not a smart contract concern. |
+| S7  | **ClaimReceipt minted by unauthorized contract** | ClaimReceipt maintains a mapping of authorized vault addresses. Only registered vaults can mint.                 |
 
 ### Gas Optimization Opportunities
 
-| # | Optimization | Impact |
-|---|-------------|--------|
-| G1 | Pack `VaultPolicy` struct fields to minimize storage slots | Moderate -- saves ~20K gas on writes |
-| G2 | Use `uint96` for amounts (sufficient for USDC with 6 decimals up to ~$79T) | Moderate -- tighter packing |
-| G3 | Cache `registry.currentTime()` in a local variable within functions that call it multiple times | Minor -- saves a few hundred gas |
-| G4 | Skip these for hackathon -- correctness > gas efficiency | **Recommended** |
+| #   | Optimization                                                                                    | Impact                               |
+| --- | ----------------------------------------------------------------------------------------------- | ------------------------------------ |
+| G1  | Pack `VaultPolicy` struct fields to minimize storage slots                                      | Moderate -- saves ~20K gas on writes |
+| G2  | Use `uint96` for amounts (sufficient for USDC with 6 decimals up to ~$79T)                      | Moderate -- tighter packing          |
+| G3  | Cache `registry.currentTime()` in a local variable within functions that call it multiple times | Minor -- saves a few hundred gas     |
+| G4  | Skip these for hackathon -- correctness > gas efficiency                                        | **Recommended**                      |
 
 ---
 
@@ -1572,54 +1607,54 @@ uint256 constant NINETY_DAYS = 90 days;
 
 ### For Marco (Smart Contract Build)
 
-| Skill | Purpose | Configuration |
-|-------|---------|--------------|
-| **foundry-build** | Compile contracts | `forge build` with correct profile |
-| **foundry-test** | Run full test suite | `forge test -vvv` with gas reporting |
-| **foundry-test-match** | Run specific test | `forge test --match-test testName -vvvv` for debugging |
-| **anvil-start** | Start local chain | `anvil --chain-id 31337` with deterministic accounts |
-| **forge-script** | Run deployment scripts | `forge script script/Deploy.s.sol --rpc-url ... --broadcast` |
-| **contract-size** | Check contract sizes | `forge build --sizes` (InsuranceVault may approach 24KB limit) |
+| Skill                  | Purpose                | Configuration                                                  |
+| ---------------------- | ---------------------- | -------------------------------------------------------------- |
+| **foundry-build**      | Compile contracts      | `forge build` with correct profile                             |
+| **foundry-test**       | Run full test suite    | `forge test -vvv` with gas reporting                           |
+| **foundry-test-match** | Run specific test      | `forge test --match-test testName -vvvv` for debugging         |
+| **anvil-start**        | Start local chain      | `anvil --chain-id 31337` with deterministic accounts           |
+| **forge-script**       | Run deployment scripts | `forge script script/Deploy.s.sol --rpc-url ... --broadcast`   |
+| **contract-size**      | Check contract sizes   | `forge build --sizes` (InsuranceVault may approach 24KB limit) |
 
 ### For Luca (Frontend Build)
 
-| Skill | Purpose | Configuration |
-|-------|---------|--------------|
-| **next-dev** | Start dev server | `npm run dev` |
-| **next-build** | Production build | `npm run build` (catches TypeScript errors) |
-| **copy-abis** | Copy ABIs from Foundry to frontend | Script: copy `out/*.json` ABI arrays to `frontend/src/config/contracts.ts` |
-| **wagmi-codegen** | Generate typed hooks from ABIs | Optional: `@wagmi/cli` for type-safe contract interaction |
+| Skill             | Purpose                            | Configuration                                                              |
+| ----------------- | ---------------------------------- | -------------------------------------------------------------------------- |
+| **next-dev**      | Start dev server                   | `npm run dev`                                                              |
+| **next-build**    | Production build                   | `npm run build` (catches TypeScript errors)                                |
+| **copy-abis**     | Copy ABIs from Foundry to frontend | Script: copy `out/*.json` ABI arrays to `frontend/src/config/contracts.ts` |
+| **wagmi-codegen** | Generate typed hooks from ABIs     | Optional: `@wagmi/cli` for type-safe contract interaction                  |
 
 ### For Integration
 
-| Skill | Purpose | Configuration |
-|-------|---------|--------------|
-| **demo-setup** | Deploy contracts + seed demo data | `forge script script/DemoSetup.s.sol` |
-| **demo-reset** | Reset demo state | Re-run `DemoSetup.s.sol` for fresh deployment |
+| Skill          | Purpose                           | Configuration                                 |
+| -------------- | --------------------------------- | --------------------------------------------- |
+| **demo-setup** | Deploy contracts + seed demo data | `forge script script/DemoSetup.s.sol`         |
+| **demo-reset** | Reset demo state                  | Re-run `DemoSetup.s.sol` for fresh deployment |
 
 ### MCP Servers (Optional)
 
-| Server | Purpose |
-|--------|---------|
+| Server          | Purpose                                                    |
+| --------------- | ---------------------------------------------------------- |
 | **Foundry MCP** | If available -- direct forge/anvil interaction from Claude |
-| **GitHub MCP** | PR creation, code review, branch management |
+| **GitHub MCP**  | PR creation, code review, branch management                |
 
 ---
 
 ## 11. Implementation Risks
 
-| # | Risk | Severity | Mitigation |
-|---|------|----------|------------|
-| R1 | **totalAssets() correctness** -- single bug breaks all share pricing, deposits, withdrawals | Critical | Write fuzz tests first. Test with concrete numbers matching design doc walkthrough. |
-| R2 | **Three claim paths complexity** -- most code and most test surface area in InsuranceVault | High | Implement one path at a time. Test each before moving to the next. Start with P1 (simplest). |
-| R3 | **USDC approve-then-deposit UX** -- two transactions confuse users | Medium | Frontend state machine handles this. Consider using `permit2` if time allows. |
-| R4 | **Contract size limit (24KB)** -- InsuranceVault may be too large | Medium | Monitor with `forge build --sizes`. If close, extract helpers into a library contract. |
-| R5 | **ABI sync between contracts and frontend** -- stale ABIs cause silent failures | Medium | Copy ABIs immediately after any contract change. Consider a script. |
-| R6 | **Fee accrual precision** -- rounding errors accumulate over many time advances | Low | Use high-precision intermediate calculations. Test with many small time advances. |
-| R7 | **wagmi v2 + Next.js 15 SSR hydration** -- server/client mismatch on wallet state | Medium | Use `"use client"` directive on all wallet-dependent components. Wrap in `<Suspense>`. |
-| R8 | **Demo timing** -- live demo on Base Sepolia depends on network reliability | Medium | Have Anvil local fallback ready. Frontend supports both chains via config. |
-| R9 | **ClaimReceipt authorization** -- vault must be registered in ClaimReceipt before minting | Low | Include in deployment script. Test in integration. |
-| R10 | **Time offset edge case** -- advancing time past multiple policy expiries in one call | Medium | Lazy expiry check handles this. But test explicitly with `advanceTime(1 year)`. |
+| #   | Risk                                                                                        | Severity | Mitigation                                                                                   |
+| --- | ------------------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------- |
+| R1  | **totalAssets() correctness** -- single bug breaks all share pricing, deposits, withdrawals | Critical | Write fuzz tests first. Test with concrete numbers matching design doc walkthrough.          |
+| R2  | **Three claim paths complexity** -- most code and most test surface area in InsuranceVault  | High     | Implement one path at a time. Test each before moving to the next. Start with P1 (simplest). |
+| R3  | **USDC approve-then-deposit UX** -- two transactions confuse users                          | Medium   | Frontend state machine handles this. Consider using `permit2` if time allows.                |
+| R4  | **Contract size limit (24KB)** -- InsuranceVault may be too large                           | Medium   | Monitor with `forge build --sizes`. If close, extract helpers into a library contract.       |
+| R5  | **ABI sync between contracts and frontend** -- stale ABIs cause silent failures             | Medium   | Copy ABIs immediately after any contract change. Consider a script.                          |
+| R6  | **Fee accrual precision** -- rounding errors accumulate over many time advances             | Low      | Use high-precision intermediate calculations. Test with many small time advances.            |
+| R7  | **wagmi v2 + Next.js 15 SSR hydration** -- server/client mismatch on wallet state           | Medium   | Use `"use client"` directive on all wallet-dependent components. Wrap in `<Suspense>`.       |
+| R8  | **Demo timing** -- live demo on Base Sepolia depends on network reliability                 | Medium   | Have Anvil local fallback ready. Frontend supports both chains via config.                   |
+| R9  | **ClaimReceipt authorization** -- vault must be registered in ClaimReceipt before minting   | Low      | Include in deployment script. Test in integration.                                           |
+| R10 | **Time offset edge case** -- advancing time past multiple policy expiries in one call       | Medium   | Lazy expiry check handles this. But test explicitly with `advanceTime(1 year)`.              |
 
 ### Top 3 Hardest Tasks
 
@@ -1631,15 +1666,15 @@ uint256 constant NINETY_DAYS = 90 days;
 
 ## Appendix: Disagreements Resolved Between Reviewers
 
-| Topic | Tim's Position | Marco's Position | Resolution |
-|-------|---------------|-----------------|------------|
-| `timeOffset` location | Per-vault on InsuranceVault | Single on PolicyRegistry | **PolicyRegistry** -- avoids time drift between vaults |
-| `_decimalsOffset()` | Returns 12 | Returns 6 | **12** -- bridges USDC 6 decimals to share 18 decimals. Produces intuitive 1:1 share/USDC display (deposit $10K = ~10,000 shares at ~$1.00). |
-| `addPolicy` + premium | Bundle into one call | Separate `addPolicy` + `depositPremium` | **Separate** -- different roles (vault manager vs admin), cleaner separation |
-| `exerciseClaim` caller | Original insurer address | `ownerOf(receiptId)` (NFT holder) | **receipt.insurer == msg.sender** -- soulbound NFT (D3), transferability deferred to production |
-| Fee circularity | Snapshot-based (`lastSnapshotAssets`) | Pre-fee basis (`preFeeAssets` parameter) | **Pre-fee basis** -- simpler, no separate snapshot state needed |
-| Next.js version | 14 | (no opinion) | **15** -- Luca recommends latest with App Router |
+| Topic                  | Tim's Position                        | Marco's Position                         | Resolution                                                                                                                                   |
+| ---------------------- | ------------------------------------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `timeOffset` location  | Per-vault on InsuranceVault           | Single on PolicyRegistry                 | **PolicyRegistry** -- avoids time drift between vaults                                                                                       |
+| `_decimalsOffset()`    | Returns 12                            | Returns 6                                | **12** -- bridges USDC 6 decimals to share 18 decimals. Produces intuitive 1:1 share/USDC display (deposit $10K = ~10,000 shares at ~$1.00). |
+| `addPolicy` + premium  | Bundle into one call                  | Separate `addPolicy` + `depositPremium`  | **Separate** -- different roles (vault manager vs admin), cleaner separation                                                                 |
+| `exerciseClaim` caller | Original insurer address              | `ownerOf(receiptId)` (NFT holder)        | **receipt.insurer == msg.sender** -- soulbound NFT (D3), transferability deferred to production                                              |
+| Fee circularity        | Snapshot-based (`lastSnapshotAssets`) | Pre-fee basis (`preFeeAssets` parameter) | **Pre-fee basis** -- simpler, no separate snapshot state needed                                                                              |
+| Next.js version        | 14                                    | (no opinion)                             | **15** -- Luca recommends latest with App Router                                                                                             |
 
 ---
 
-*This document synthesizes reviews from Tim (CTO), Marco (Smart Contract Engineer), and Luca (Fullstack Engineer). Source: `docs/product/hackathon-prototype-design.md` V6.*
+_This document synthesizes reviews from Tim (CTO), Marco (Smart Contract Engineer), and Luca (Fullstack Engineer). Source: `docs/product/hackathon-prototype-design.md` V6._
