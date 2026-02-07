@@ -22,6 +22,47 @@ export default function VaultDiscoveryPage() {
         </p>
       </div>
 
+      {/* Platform info */}
+      <div className="mt-12 mb-12 rounded-xl border border-gray-200 bg-white p-6">
+        <h2 className="text-lg font-semibold text-gray-900">How It Works</h2>
+        <div className="mt-4 grid gap-6 md:grid-cols-3">
+          <div>
+            <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100">
+              <span className="text-sm font-bold text-slate-600">1</span>
+            </div>
+            <h3 className="text-sm font-medium text-gray-900">
+              Tokenized Policies
+            </h3>
+            <p className="mt-1 text-xs text-gray-500">
+              Insurance policies are tokenized on-chain with transparent terms,
+              coverage, and verification methods.
+            </p>
+          </div>
+          <div>
+            <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100">
+              <span className="text-sm font-bold text-slate-600">2</span>
+            </div>
+            <h3 className="text-sm font-medium text-gray-900">
+              Curated Vaults
+            </h3>
+            <p className="mt-1 text-xs text-gray-500">
+              Vault managers build diversified portfolios from tokenized
+              policies. Different strategies for different risk appetites.
+            </p>
+          </div>
+          <div>
+            <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100">
+              <span className="text-sm font-bold text-slate-600">3</span>
+            </div>
+            <h3 className="text-sm font-medium text-gray-900">Earn Premiums</h3>
+            <p className="mt-1 text-xs text-gray-500">
+              Your deposit provides underwriting capacity. Premiums accrue as
+              yield over time. Withdraw anytime from the liquidity buffer.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Verification legend */}
       <div className="mb-6 flex flex-wrap items-center gap-3">
         <span className="text-xs font-medium uppercase tracking-wider text-gray-400">
@@ -69,47 +110,6 @@ export default function VaultDiscoveryPage() {
       ) : (
         <VaultTable vaultAddresses={vaultAddresses} />
       )}
-
-      {/* Platform info */}
-      <div className="mt-12 rounded-xl border border-gray-200 bg-white p-6">
-        <h2 className="text-lg font-semibold text-gray-900">How It Works</h2>
-        <div className="mt-4 grid gap-6 md:grid-cols-3">
-          <div>
-            <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100">
-              <span className="text-sm font-bold text-slate-600">1</span>
-            </div>
-            <h3 className="text-sm font-medium text-gray-900">
-              Tokenized Policies
-            </h3>
-            <p className="mt-1 text-xs text-gray-500">
-              Insurance policies are tokenized on-chain with transparent terms,
-              coverage, and verification methods.
-            </p>
-          </div>
-          <div>
-            <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100">
-              <span className="text-sm font-bold text-slate-600">2</span>
-            </div>
-            <h3 className="text-sm font-medium text-gray-900">
-              Curated Vaults
-            </h3>
-            <p className="mt-1 text-xs text-gray-500">
-              Vault managers build diversified portfolios from tokenized
-              policies. Different strategies for different risk appetites.
-            </p>
-          </div>
-          <div>
-            <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100">
-              <span className="text-sm font-bold text-slate-600">3</span>
-            </div>
-            <h3 className="text-sm font-medium text-gray-900">Earn Premiums</h3>
-            <p className="mt-1 text-xs text-gray-500">
-              Your deposit provides underwriting capacity. Premiums accrue as
-              yield over time. Withdraw anytime from the liquidity buffer.
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

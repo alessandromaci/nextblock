@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import { useCheckClaim, useReportEvent, useSubmitClaim } from '@/hooks/useClaimTrigger';
+import { useVaultPolicies } from '@/hooks/useVaultPolicies';
 import { VerificationBadge } from '@/components/shared/VerificationBadge';
 import { VerificationType } from '@/config/constants';
-import { parseUSDC } from '@/lib/formatting';
+import { formatUSDCCompact, parseUSDC } from '@/lib/formatting';
 
 interface ClaimTriggersProps {
   vaultAddresses: readonly `0x${string}`[];
@@ -13,41 +14,7 @@ interface ClaimTriggersProps {
 
 export function ClaimTriggers({ vaultAddresses, vaultNames }: ClaimTriggersProps) {
   const [selectedVaultIdx, setSelectedVaultIdx] = useState(0);
-  const [p3Amount, setP3Amount] = useState('');
-
-  const checkClaim = useCheckClaim();
-  const reportEvent = useReportEvent();
-  const submitClaim = useSubmitClaim();
-
   const selectedVault = vaultAddresses[selectedVaultIdx];
-
-  const handleP1Trigger = () => {
-    if (selectedVault) {
-      checkClaim.trigger(selectedVault, 0n);
-    }
-  };
-
-  const handleP1TriggerAll = () => {
-    for (const vault of vaultAddresses) {
-      checkClaim.trigger(vault, 0n);
-    }
-  };
-
-  const handleP2Trigger = () => {
-    if (selectedVault) {
-      reportEvent.trigger(selectedVault, 1n);
-    }
-  };
-
-  const handleP3Trigger = () => {
-    if (selectedVault) {
-      const amount = parseUSDC(p3Amount);
-      if (amount > 0n) {
-        submitClaim.trigger(selectedVault, 2n, amount);
-        setP3Amount('');
-      }
-    }
-  };
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-6">
@@ -56,7 +23,7 @@ export function ClaimTriggers({ vaultAddresses, vaultNames }: ClaimTriggersProps
       </h3>
       <p className="mb-4 text-xs text-gray-500">
         Trigger claims on policies. Claims auto-settle when the vault has
-        sufficient funds. Each type has a different verification path.
+        sufficient funds. Each verification type uses a different trigger path.
       </p>
 
       {/* Vault selector */}
@@ -64,61 +31,126 @@ export function ClaimTriggers({ vaultAddresses, vaultNames }: ClaimTriggersProps
         <label className="mb-1 block text-xs font-medium text-gray-700">
           Target Vault
         </label>
-        <div className="flex gap-2">
-          {vaultAddresses.map((addr, idx) => (
-            <button
-              key={addr}
-              type="button"
-              onClick={() => setSelectedVaultIdx(idx)}
-              className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
-                selectedVaultIdx === idx
-                  ? 'border-gray-900 bg-gray-900 text-white'
-                  : 'border-gray-200 text-gray-700 hover:bg-gray-50'
-              }`}
-            >
+        <select
+          value={selectedVaultIdx}
+          onChange={(e) => setSelectedVaultIdx(Number(e.target.value))}
+          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-gray-400 focus:outline-none"
+        >
+          {vaultAddresses.map((_, idx) => (
+            <option key={idx} value={idx}>
               {vaultNames[idx] || `Vault ${idx + 1}`}
-            </button>
+            </option>
           ))}
-        </div>
+        </select>
       </div>
 
-      {/* P1: BTC Protection (On-chain, permissionless) */}
-      <div className="mb-3 rounded-lg border border-gray-100 p-3">
+      {/* Dynamic policy triggers */}
+      {selectedVault && (
+        <VaultPolicyTriggers vaultAddress={selectedVault} />
+      )}
+    </div>
+  );
+}
+
+function VaultPolicyTriggers({ vaultAddress }: { vaultAddress: `0x${string}` }) {
+  const { policies, isLoading } = useVaultPolicies(vaultAddress);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-20 animate-pulse rounded-lg bg-gray-50" />
+        ))}
+      </div>
+    );
+  }
+
+  if (policies.length === 0) {
+    return (
+      <p className="py-4 text-center text-sm text-gray-400">
+        No policies in this vault.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {policies.map((policy) => (
+        <PolicyTriggerRow
+          key={Number(policy.policyId)}
+          vaultAddress={vaultAddress}
+          policyId={policy.policyId}
+          name={policy.global.name}
+          verificationType={policy.global.verificationType}
+          coverageAmount={policy.global.coverageAmount}
+          claimed={policy.vault.claimed}
+        />
+      ))}
+    </div>
+  );
+}
+
+function PolicyTriggerRow({
+  vaultAddress,
+  policyId,
+  name,
+  verificationType,
+  coverageAmount,
+  claimed,
+}: {
+  vaultAddress: `0x${string}`;
+  policyId: bigint;
+  name: string;
+  verificationType: number;
+  coverageAmount: bigint;
+  claimed: boolean;
+}) {
+  const [claimAmount, setClaimAmount] = useState('');
+  const checkClaim = useCheckClaim();
+  const reportEvent = useReportEvent();
+  const submitClaim = useSubmitClaim();
+
+  const coverageStr = formatUSDCCompact(coverageAmount);
+
+  if (claimed) {
+    return (
+      <div className="rounded-lg border border-gray-100 bg-gray-50 p-3 opacity-60">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-500 line-through">{name}</span>
+            <VerificationBadge type={verificationType} />
+          </div>
+          <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-600">
+            Claimed
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  if (verificationType === VerificationType.ON_CHAIN) {
+    return (
+      <div className="rounded-lg border border-gray-100 p-3">
         <div className="mb-2 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-900">
-              P1: BTC Protection
-            </span>
-            <VerificationBadge type={VerificationType.ON_CHAIN} />
+            <span className="text-sm font-medium text-gray-900">{name}</span>
+            <VerificationBadge type={verificationType} />
           </div>
+          <span className="text-xs text-gray-400">{coverageStr}</span>
         </div>
         <p className="mb-2 text-xs text-gray-500">
-          Permissionless. Anyone can trigger if BTC price is below threshold.
+          Permissionless. Anyone can trigger if oracle condition is met.
         </p>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={handleP1Trigger}
-            disabled={checkClaim.isPending}
-            className="flex-1 rounded-lg border border-emerald-200 px-3 py-2 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-50 disabled:opacity-50"
-          >
-            {checkClaim.isPending ? 'Triggering...' : 'Trigger & Settle'}
-          </button>
-          {vaultAddresses.length > 1 && (
-            <button
-              type="button"
-              onClick={handleP1TriggerAll}
-              disabled={checkClaim.isPending}
-              className="rounded-lg border border-red-200 px-3 py-2 text-xs font-medium text-red-700 transition-colors hover:bg-red-50 disabled:opacity-50"
-            >
-              Trigger All Vaults
-            </button>
-          )}
-        </div>
+        <button
+          type="button"
+          onClick={() => checkClaim.trigger(vaultAddress, policyId)}
+          disabled={checkClaim.isPending}
+          className="w-full rounded-lg border border-emerald-200 px-3 py-2 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-50 disabled:opacity-50"
+        >
+          {checkClaim.isPending ? 'Triggering...' : 'Check & Settle'}
+        </button>
         {checkClaim.isSuccess && (
-          <p className="mt-2 text-xs text-emerald-600">
-            Claim triggered and auto-settled.
-          </p>
+          <p className="mt-2 text-xs text-emerald-600">Claim triggered and auto-settled.</p>
         )}
         {checkClaim.error && (
           <p className="mt-2 text-xs text-red-600">
@@ -126,32 +158,32 @@ export function ClaimTriggers({ vaultAddresses, vaultNames }: ClaimTriggersProps
           </p>
         )}
       </div>
+    );
+  }
 
-      {/* P2: Flight Delay (Oracle-dependent) */}
-      <div className="mb-3 rounded-lg border border-gray-100 p-3">
+  if (verificationType === VerificationType.ORACLE_DEPENDENT) {
+    return (
+      <div className="rounded-lg border border-gray-100 p-3">
         <div className="mb-2 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-900">
-              P2: Flight Delay
-            </span>
-            <VerificationBadge type={VerificationType.ORACLE_DEPENDENT} />
+            <span className="text-sm font-medium text-gray-900">{name}</span>
+            <VerificationBadge type={verificationType} />
           </div>
+          <span className="text-xs text-gray-400">{coverageStr}</span>
         </div>
         <p className="mb-2 text-xs text-gray-500">
-          Oracle reporter only. Set flight status to &quot;Delayed&quot; first.
+          Oracle reporter only. Set oracle condition first, then trigger.
         </p>
         <button
           type="button"
-          onClick={handleP2Trigger}
+          onClick={() => reportEvent.trigger(vaultAddress, policyId)}
           disabled={reportEvent.isPending}
           className="w-full rounded-lg border border-amber-200 px-3 py-2 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-50 disabled:opacity-50"
         >
-          {reportEvent.isPending ? 'Triggering...' : 'Trigger & Settle'}
+          {reportEvent.isPending ? 'Triggering...' : 'Report Event & Settle'}
         </button>
         {reportEvent.isSuccess && (
-          <p className="mt-2 text-xs text-emerald-600">
-            Claim triggered and auto-settled.
-          </p>
+          <p className="mt-2 text-xs text-emerald-600">Claim triggered and auto-settled.</p>
         )}
         {reportEvent.error && (
           <p className="mt-2 text-xs text-red-600">
@@ -159,64 +191,69 @@ export function ClaimTriggers({ vaultAddresses, vaultNames }: ClaimTriggersProps
           </p>
         )}
       </div>
+    );
+  }
 
-      {/* P3: Commercial Fire (Off-chain, insurer admin) */}
-      <div className="rounded-lg border border-gray-100 p-3">
-        <div className="mb-2 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-900">
-              P3: Commercial Fire
-            </span>
-            <VerificationBadge type={VerificationType.OFF_CHAIN} />
-          </div>
+  // OFF_CHAIN
+  return (
+    <div className="rounded-lg border border-gray-100 p-3">
+      <div className="mb-2 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-gray-900">{name}</span>
+          <VerificationBadge type={verificationType} />
         </div>
-        <p className="mb-2 text-xs text-gray-500">
-          Insurer admin only. Partial claims allowed (up to $40K coverage).
-        </p>
-        <div className="flex gap-2">
-          <input
-            type="number"
-            placeholder="Claim amount (USDC)"
-            value={p3Amount}
-            onChange={(e) => setP3Amount(e.target.value)}
-            className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-300 focus:border-gray-400 focus:outline-none"
-          />
-          <button
-            type="button"
-            onClick={handleP3Trigger}
-            disabled={submitClaim.isPending || !p3Amount}
-            className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
-          >
-            {submitClaim.isPending ? '...' : 'Submit & Settle'}
-          </button>
-        </div>
-        <div className="mt-2 flex gap-2">
-          <button
-            type="button"
-            onClick={() => setP3Amount('35000')}
-            className="rounded border border-gray-200 px-2 py-1 text-xs text-gray-600 hover:bg-gray-50"
-          >
-            $35K (partial)
-          </button>
-          <button
-            type="button"
-            onClick={() => setP3Amount('40000')}
-            className="rounded border border-gray-200 px-2 py-1 text-xs text-gray-600 hover:bg-gray-50"
-          >
-            $40K (full)
-          </button>
-        </div>
-        {submitClaim.isSuccess && (
-          <p className="mt-2 text-xs text-emerald-600">
-            Claim triggered and auto-settled.
-          </p>
-        )}
-        {submitClaim.error && (
-          <p className="mt-2 text-xs text-red-600">
-            {(submitClaim.error as Error).message?.split('\n')[0] || 'Transaction failed'}
-          </p>
-        )}
+        <span className="text-xs text-gray-400">{coverageStr}</span>
       </div>
+      <p className="mb-2 text-xs text-gray-500">
+        Insurer admin only. Specify claim amount (up to {coverageStr} coverage).
+      </p>
+      <div className="flex gap-2">
+        <input
+          type="number"
+          placeholder="Claim amount (USDC)"
+          value={claimAmount}
+          onChange={(e) => setClaimAmount(e.target.value)}
+          className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-300 focus:border-gray-400 focus:outline-none"
+        />
+        <button
+          type="button"
+          onClick={() => {
+            const amount = parseUSDC(claimAmount);
+            if (amount > 0n) {
+              submitClaim.trigger(vaultAddress, policyId, amount);
+              setClaimAmount('');
+            }
+          }}
+          disabled={submitClaim.isPending || !claimAmount}
+          className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
+        >
+          {submitClaim.isPending ? '...' : 'Submit'}
+        </button>
+      </div>
+      <div className="mt-2 flex gap-2">
+        <button
+          type="button"
+          onClick={() => setClaimAmount(String(Number(coverageAmount) / 2e6))}
+          className="rounded border border-gray-200 px-2 py-1 text-xs text-gray-600 hover:bg-gray-50"
+        >
+          50% ({formatUSDCCompact(coverageAmount / 2n)})
+        </button>
+        <button
+          type="button"
+          onClick={() => setClaimAmount(String(Number(coverageAmount) / 1e6))}
+          className="rounded border border-gray-200 px-2 py-1 text-xs text-gray-600 hover:bg-gray-50"
+        >
+          Full ({coverageStr})
+        </button>
+      </div>
+      {submitClaim.isSuccess && (
+        <p className="mt-2 text-xs text-emerald-600">Claim submitted and auto-settled.</p>
+      )}
+      {submitClaim.error && (
+        <p className="mt-2 text-xs text-red-600">
+          {(submitClaim.error as Error).message?.split('\n')[0] || 'Transaction failed'}
+        </p>
+      )}
     </div>
   );
 }
