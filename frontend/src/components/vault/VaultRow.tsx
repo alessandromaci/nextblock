@@ -1,74 +1,84 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useVaultInfo } from '@/hooks/useVaultData';
-import { useVaultPolicyIds, useGlobalPoliciesData } from '@/hooks/useVaultPolicies';
-import { VerificationDot } from '@/components/shared/VerificationBadge';
-import { formatUSDCCompact, getSharePriceNumber, shortenAddress } from '@/lib/formatting';
+import Link from "next/link";
+import { useVaultInfo } from "@/hooks/useVaultData";
+import {
+  useVaultPolicyIds,
+  useGlobalPoliciesData,
+} from "@/hooks/useVaultPolicies";
+import { VerificationDot } from "@/components/shared/VerificationBadge";
+import {
+  formatUSDCCompact,
+  getSharePriceNumber,
+  shortenAddress,
+} from "@/lib/formatting";
 
 // Vault display metadata (name substring -> display info)
-const VAULT_DISPLAY: Record<string, {
-  manager: string;
-  strategy: string;
-  riskLevel: string;
-  riskColor: string;
-  targetApy: string;
-}> = {
-  'Balanced Core': {
-    manager: 'NextBlock Core Team',
-    strategy: 'Full-spectrum diversification across all verification types',
-    riskLevel: 'Moderate',
-    riskColor: 'text-amber-600 bg-amber-50',
-    targetApy: '8-12%',
+const VAULT_DISPLAY: Record<
+  string,
+  {
+    manager: string;
+    strategy: string;
+    riskLevel: string;
+    riskColor: string;
+    targetApy: string;
+  }
+> = {
+  "Balanced Core": {
+    manager: "NextBlock Core Team",
+    strategy: "Full-spectrum diversification across all verification types",
+    riskLevel: "Moderate",
+    riskColor: "text-amber-600 bg-amber-50",
+    targetApy: "8-12%",
   },
-  'Digital Asset Shield': {
-    manager: 'AlphaRe Capital',
-    strategy: 'Automated on-chain claims only, pure crypto risk exposure',
-    riskLevel: 'Higher',
-    riskColor: 'text-orange-600 bg-orange-50',
-    targetApy: '10-14%',
+  "Digital Asset Shield": {
+    manager: "AlphaRe Capital",
+    strategy: "Automated on-chain claims only, pure crypto risk exposure",
+    riskLevel: "Higher",
+    riskColor: "text-orange-600 bg-orange-50",
+    targetApy: "10-14%",
   },
-  'Parametric Shield': {
-    manager: 'StormGuard Capital',
-    strategy: 'Oracle-verified parametric insurance only',
-    riskLevel: 'Moderate',
-    riskColor: 'text-amber-600 bg-amber-50',
-    targetApy: '9-13%',
+  "Parametric Shield": {
+    manager: "StormGuard Capital",
+    strategy: "Oracle-verified parametric insurance only",
+    riskLevel: "Moderate",
+    riskColor: "text-amber-600 bg-amber-50",
+    targetApy: "9-13%",
   },
-  'Conservative Yield': {
-    manager: 'Klapton Re Partners',
-    strategy: 'Low-volatility off-chain reinsurance portfolio',
-    riskLevel: 'Lower',
-    riskColor: 'text-emerald-600 bg-emerald-50',
-    targetApy: '5-8%',
+  "Conservative Yield": {
+    manager: "Klapton Re Partners",
+    strategy: "Low-volatility off-chain reinsurance portfolio",
+    riskLevel: "Lower",
+    riskColor: "text-emerald-600 bg-emerald-50",
+    targetApy: "5-8%",
   },
-  'Catastrophe & Specialty': {
-    manager: 'Alpine Re',
-    strategy: 'Catastrophe-focused with specialty lines diversification',
-    riskLevel: 'High',
-    riskColor: 'text-red-600 bg-red-50',
-    targetApy: '14-18%',
+  "Catastrophe & Specialty": {
+    manager: "Alpine Re",
+    strategy: "Catastrophe-focused with specialty lines diversification",
+    riskLevel: "High",
+    riskColor: "text-red-600 bg-red-50",
+    targetApy: "14-18%",
   },
-  'Traditional Lines': {
-    manager: 'BondSecure Capital',
-    strategy: 'Established commercial and liability reinsurance',
-    riskLevel: 'Lower',
-    riskColor: 'text-emerald-600 bg-emerald-50',
-    targetApy: '6-9%',
+  "Traditional Lines": {
+    manager: "BondSecure Capital",
+    strategy: "Established commercial and liability reinsurance",
+    riskLevel: "Lower",
+    riskColor: "text-emerald-600 bg-emerald-50",
+    targetApy: "6-9%",
   },
-  'Technology & Specialty': {
-    manager: 'CyberGuard Partners',
-    strategy: 'Digital asset and technology risk with property diversification',
-    riskLevel: 'Moderate',
-    riskColor: 'text-amber-600 bg-amber-50',
-    targetApy: '8-11%',
+  "Technology & Specialty": {
+    manager: "CyberGuard Partners",
+    strategy: "Digital asset and technology risk with property diversification",
+    riskLevel: "Moderate",
+    riskColor: "text-amber-600 bg-amber-50",
+    targetApy: "8-11%",
   },
-  'Multi-Line Diversified': {
-    manager: 'Meridian Risk Mgmt',
-    strategy: 'Maximum diversification across all categories',
-    riskLevel: 'Moderate',
-    riskColor: 'text-amber-600 bg-amber-50',
-    targetApy: '9-13%',
+  "Multi-Line Diversified": {
+    manager: "Meridian Risk Mgmt",
+    strategy: "Maximum diversification across all categories",
+    riskLevel: "Moderate",
+    riskColor: "text-amber-600 bg-amber-50",
+    targetApy: "9-13%",
   },
 };
 
@@ -77,11 +87,11 @@ function getVaultDisplay(name: string) {
     if (name.includes(key)) return value;
   }
   return {
-    manager: 'Vault Manager',
-    strategy: 'Custom strategy',
-    riskLevel: 'Moderate',
-    riskColor: 'text-amber-600 bg-amber-50',
-    targetApy: '8-14%',
+    manager: "Vault Manager",
+    strategy: "Custom strategy",
+    riskLevel: "Moderate",
+    riskColor: "text-amber-600 bg-amber-50",
+    targetApy: "8-14%",
   };
 }
 
@@ -112,19 +122,18 @@ export function VaultRow({ vaultAddress }: VaultRowProps) {
     );
   }
 
-  const [name, , assets, , , , , , , policyCount] =
-    vaultInfo as unknown as [
-      string,
-      `0x${string}`,
-      bigint,
-      bigint,
-      bigint,
-      bigint,
-      bigint,
-      bigint,
-      bigint,
-      bigint,
-    ];
+  const [name, , assets, , , , , , , policyCount] = vaultInfo as unknown as [
+    string,
+    `0x${string}`,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+  ];
 
   const display = getVaultDisplay(name);
 
@@ -132,7 +141,7 @@ export function VaultRow({ vaultAddress }: VaultRowProps) {
   const verificationTypes: Set<number> = new Set();
   if (globalPolicies) {
     for (const gp of globalPolicies) {
-      if (gp.status === 'success' && gp.result) {
+      if (gp.status === "success" && gp.result) {
         const policy = gp.result as unknown as { verificationType: number };
         verificationTypes.add(policy.verificationType);
       }
@@ -146,9 +155,7 @@ export function VaultRow({ vaultAddress }: VaultRowProps) {
           <div className="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
             {name}
           </div>
-          <div className="mt-0.5 text-xs text-gray-400">
-            {display.manager}
-          </div>
+          <div className="mt-0.5 text-xs text-gray-400">{display.manager}</div>
         </Link>
       </td>
       <td className="px-6 py-4">
@@ -166,9 +173,11 @@ export function VaultRow({ vaultAddress }: VaultRowProps) {
       <td className="px-6 py-4">
         <Link href={`/vault/${vaultAddress}`} className="block">
           <div className="flex items-center gap-1.5">
-            {Array.from(verificationTypes).sort().map((vt) => (
-              <VerificationDot key={vt} type={vt} />
-            ))}
+            {Array.from(verificationTypes)
+              .sort()
+              .map((vt) => (
+                <VerificationDot key={vt} type={vt} />
+              ))}
             {verificationTypes.size === 0 && (
               <span className="text-xs text-gray-300">--</span>
             )}

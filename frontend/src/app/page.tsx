@@ -23,7 +23,7 @@ export default function VaultDiscoveryPage() {
       </div>
 
       {/* Platform info */}
-      <div className="mt-12 mb-12 rounded-xl border border-gray-200 bg-white p-6">
+      <div className="mt-8 mb-8 rounded-xl border border-gray-200 bg-white p-6">
         <h2 className="text-lg font-semibold text-gray-900">How It Works</h2>
         <div className="mt-4 grid gap-6 md:grid-cols-3">
           <div>
@@ -66,7 +66,7 @@ export default function VaultDiscoveryPage() {
       {/* Verification legend */}
       <div className="mb-6 flex flex-wrap items-center gap-3">
         <span className="text-xs font-medium uppercase tracking-wider text-gray-400">
-          Verification types:
+          Insurance verification types:
         </span>
         <VerificationBadge type={VerificationType.ON_CHAIN} />
         <VerificationBadge type={VerificationType.ORACLE_DEPENDENT} />
