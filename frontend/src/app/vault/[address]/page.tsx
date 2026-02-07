@@ -187,6 +187,16 @@ export default function VaultDetailPage({
 
   const pendingClaims = pendingClaimsData ?? 0n;
 
+  // Cap max withdrawal at TVL-based free capital (totalAssets - deployed - pending).
+  // The contract's maxWithdraw uses gross USDC buffer which includes unearned premiums,
+  // but the buffer reserve should be a % of TVL, not gross balance.
+  const freeCapital = assets > deployedCapital + pendingClaims
+    ? assets - deployedCapital - pendingClaims
+    : 0n;
+  const effectiveMaxWithdraw = maxWithdraw !== undefined
+    ? (freeCapital < maxWithdraw ? freeCapital : maxWithdraw)
+    : undefined;
+
   const activeTabClass =
     "rounded-md bg-white px-4 py-2 text-sm font-medium text-gray-900 shadow-sm";
   const inactiveTabClass =
@@ -335,8 +345,8 @@ export default function VaultDetailPage({
                   <div>
                     <p className="text-xs text-blue-600">Max Withdraw</p>
                     <p className="font-mono-num text-sm font-semibold text-blue-900">
-                      {maxWithdraw !== undefined
-                        ? formatUSDC(maxWithdraw)
+                      {effectiveMaxWithdraw !== undefined
+                        ? formatUSDC(effectiveMaxWithdraw)
                         : "--"}
                     </p>
                   </div>
@@ -404,6 +414,7 @@ export default function VaultDetailPage({
               totalAssets={assets}
               totalSupply={shares}
               policyCount={Number(policyCount)}
+              maxWithdrawOverride={effectiveMaxWithdraw}
             />
           </div>
         </div>

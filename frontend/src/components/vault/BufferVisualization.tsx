@@ -13,19 +13,24 @@ interface BufferVisualizationProps {
 export function BufferVisualization({
   totalAssets,
   deployedCapital,
-  availableBuffer,
   pendingClaims,
   bufferBps,
 }: BufferVisualizationProps) {
-  const total = Number(deployedCapital) + Number(availableBuffer) + Number(pendingClaims);
-  const deployedPct = total > 0 ? (Number(deployedCapital) / total) * 100 : 0;
-  const bufferPct = total > 0 ? (Number(availableBuffer) / total) * 100 : 0;
-  const claimsPct = total > 0 ? (Number(pendingClaims) / total) * 100 : 0;
+  // Use totalAssets (TVL) as the 100% base so segments always sum to TVL.
+  // Exposure is capped at totalAssets to avoid exceeding the bar.
+  const tvl = Number(totalAssets);
+  const exposure = Math.min(Number(deployedCapital), tvl);
+  const pending = Math.min(Number(pendingClaims), Math.max(tvl - exposure, 0));
+  const free = Math.max(tvl - exposure - pending, 0);
+
+  const exposurePct = tvl > 0 ? (exposure / tvl) * 100 : 0;
+  const pendingPct = tvl > 0 ? (pending / tvl) * 100 : 0;
+  const freePct = tvl > 0 ? (free / tvl) * 100 : 0;
 
   return (
     <div>
       <div className="mb-2 flex items-center justify-between">
-        <h3 className="text-sm font-medium text-gray-700">Capital Deployment</h3>
+        <h3 className="text-sm font-medium text-gray-700">Capital Allocation</h3>
         <span className="text-xs text-gray-400">
           Target buffer: {formatBufferRatio(bufferBps)}
         </span>
@@ -33,25 +38,25 @@ export function BufferVisualization({
 
       {/* Stacked bar */}
       <div className="flex h-4 w-full overflow-hidden rounded-full bg-gray-100">
-        {deployedPct > 0 && (
+        {exposurePct > 0 && (
           <div
             className="bg-blue-400 transition-all duration-500"
-            style={{ width: `${deployedPct}%` }}
-            title={`Deployed: ${formatUSDC(deployedCapital)}`}
+            style={{ width: `${exposurePct}%` }}
+            title={`Policy Exposure: ${formatUSDC(BigInt(Math.round(exposure)))}`}
           />
         )}
-        {claimsPct > 0 && (
+        {pendingPct > 0 && (
           <div
             className="bg-red-400 transition-all duration-500"
-            style={{ width: `${claimsPct}%` }}
-            title={`Pending Claims: ${formatUSDC(pendingClaims)}`}
+            style={{ width: `${pendingPct}%` }}
+            title={`Pending Claims: ${formatUSDC(BigInt(Math.round(pending)))}`}
           />
         )}
-        {bufferPct > 0 && (
+        {freePct > 0 && (
           <div
             className="bg-emerald-400 transition-all duration-500"
-            style={{ width: `${bufferPct}%` }}
-            title={`Available Liquidity: ${formatUSDC(availableBuffer)}`}
+            style={{ width: `${freePct}%` }}
+            title={`Free Capital: ${formatUSDC(BigInt(Math.round(free)))}`}
           />
         )}
       </div>
@@ -61,19 +66,19 @@ export function BufferVisualization({
         <div className="flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-sm bg-blue-400" />
           <span className="text-xs text-gray-600">
-            Deployed{' '}
+            Policy Exposure{' '}
             <span className="font-mono-num font-medium">
-              {formatUSDC(deployedCapital)}
+              {formatUSDC(BigInt(Math.round(exposure)))}
             </span>
           </span>
         </div>
-        {pendingClaims > 0n && (
+        {pending > 0 && (
           <div className="flex items-center gap-1.5">
             <span className="h-2.5 w-2.5 rounded-sm bg-red-400" />
             <span className="text-xs text-gray-600">
               Pending Claims{' '}
               <span className="font-mono-num font-medium">
-                {formatUSDC(pendingClaims)}
+                {formatUSDC(BigInt(Math.round(pending)))}
               </span>
             </span>
           </div>
@@ -81,9 +86,9 @@ export function BufferVisualization({
         <div className="flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-sm bg-emerald-400" />
           <span className="text-xs text-gray-600">
-            Available Liquidity{' '}
+            Free Capital{' '}
             <span className="font-mono-num font-medium">
-              {formatUSDC(availableBuffer)}
+              {formatUSDC(BigInt(Math.round(free)))}
             </span>
           </span>
         </div>

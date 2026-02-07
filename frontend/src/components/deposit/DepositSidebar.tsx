@@ -16,6 +16,7 @@ interface DepositSidebarProps {
   totalAssets: bigint;
   totalSupply: bigint;
   policyCount: number;
+  maxWithdrawOverride?: bigint;
 }
 
 export function DepositSidebar({
@@ -23,6 +24,7 @@ export function DepositSidebar({
   totalAssets,
   totalSupply,
   policyCount,
+  maxWithdrawOverride,
 }: DepositSidebarProps) {
   const { address, isConnected } = useAccount();
   const [tab, setTab] = useState<TabMode>('deposit');
@@ -112,7 +114,7 @@ export function DepositSidebar({
             inputValue={inputValue}
             onInputChange={setInputValue}
             parsedAmount={parsedAmount}
-            maxWithdraw={maxWithdraw ?? 0n}
+            maxWithdraw={maxWithdrawOverride ?? maxWithdraw ?? 0n}
             totalAssets={totalAssets}
             totalSupply={totalSupply}
             flow={withdrawFlow}
