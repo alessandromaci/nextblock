@@ -42,7 +42,6 @@ export const BASIS_POINTS = 10_000;
  * Admin wallet address per chain.
  */
 export const CHAIN_ADMIN_ADDRESS: Record<number, `0x${string}`> = {
-  31337: '0x35cE744bc6b5CE979fA3251b8008b64C35aa8505', // Anvil admin (from .env PRIVATE_KEY)
   84532: '0x35cE744bc6b5CE979fA3251b8008b64C35aa8505', // Base Sepolia admin
 };
 

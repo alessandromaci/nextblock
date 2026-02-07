@@ -1,43 +1,87 @@
-'use client';
+"use client";
 
-import { use } from 'react';
-import Link from 'next/link';
-import { useAccount } from 'wagmi';
-import { useVaultInfo, useUserShares, useMaxWithdraw, usePendingClaims } from '@/hooks/useVaultData';
-import { useVaultPolicies } from '@/hooks/useVaultPolicies';
-import { useCurrentTime } from '@/hooks/usePolicyRegistry';
-import { PolicyRow } from '@/components/vault/PolicyRow';
-import { AllocationBar } from '@/components/vault/AllocationBar';
-import { BufferVisualization } from '@/components/vault/BufferVisualization';
-import { YieldTicker } from '@/components/vault/YieldTicker';
-import { DepositSidebar } from '@/components/deposit/DepositSidebar';
-import { VerificationBadge } from '@/components/shared/VerificationBadge';
+import { use, useState } from "react";
+import Link from "next/link";
+import { useAccount } from "wagmi";
+import {
+  useVaultInfo,
+  useUserShares,
+  useMaxWithdraw,
+  usePendingClaims,
+} from "@/hooks/useVaultData";
+import { useVaultPolicies } from "@/hooks/useVaultPolicies";
+import { useCurrentTime } from "@/hooks/usePolicyRegistry";
+import { PolicyRow } from "@/components/vault/PolicyRow";
+import { AllocationBar } from "@/components/vault/AllocationBar";
+import { BufferVisualization } from "@/components/vault/BufferVisualization";
+import { YieldTicker } from "@/components/vault/YieldTicker";
+import { DepositSidebar } from "@/components/deposit/DepositSidebar";
+import { VerificationBadge } from "@/components/shared/VerificationBadge";
 import {
   formatUSDC,
   formatFeeBps,
   formatBufferRatio,
   shortenAddress,
   getSharePriceNumber,
-} from '@/lib/formatting';
+} from "@/lib/formatting";
 
-// Static display metadata
-const VAULT_DISPLAY: Record<string, {
-  manager: string;
-  strategy: string;
-  riskLevel: string;
-  targetApy: string;
-}> = {
-  'Balanced Core': {
-    manager: 'NextBlock Core Team',
-    strategy: 'Full-spectrum insurance diversification, steady yield',
-    riskLevel: 'Moderate',
-    targetApy: '8-12%',
+// Static display metadata for all 8 vault curators
+const VAULT_DISPLAY: Record<
+  string,
+  {
+    manager: string;
+    strategy: string;
+    riskLevel: string;
+    targetApy: string;
+  }
+> = {
+  "Balanced Core": {
+    manager: "NextBlock Core Team",
+    strategy: "Full-spectrum insurance diversification, steady yield",
+    riskLevel: "Moderate",
+    targetApy: "8-12%",
   },
-  'DeFi Alpha': {
-    manager: 'AlphaRe Capital',
-    strategy: 'Only automated claims. No human in the loop.',
-    riskLevel: 'Higher',
-    targetApy: '10-14%',
+  "Digital Asset Shield": {
+    manager: "AlphaRe Capital",
+    strategy: "Automated on-chain claims only, pure crypto risk exposure",
+    riskLevel: "Higher",
+    targetApy: "10-14%",
+  },
+  "Parametric Shield": {
+    manager: "StormGuard Capital",
+    strategy: "Oracle-verified parametric insurance only",
+    riskLevel: "Moderate",
+    targetApy: "9-13%",
+  },
+  "Conservative Yield": {
+    manager: "Klapton Re Partners",
+    strategy: "Low-volatility off-chain reinsurance portfolio",
+    riskLevel: "Lower",
+    targetApy: "5-8%",
+  },
+  "Catastrophe & Specialty": {
+    manager: "Alpine Re",
+    strategy: "Catastrophe-focused with specialty lines diversification",
+    riskLevel: "High",
+    targetApy: "14-18%",
+  },
+  "Traditional Lines": {
+    manager: "BondSecure Capital",
+    strategy: "Established commercial and liability reinsurance",
+    riskLevel: "Lower",
+    targetApy: "6-9%",
+  },
+  "Technology & Specialty": {
+    manager: "CyberGuard Partners",
+    strategy: "Digital asset and technology risk with property diversification",
+    riskLevel: "Moderate",
+    targetApy: "8-11%",
+  },
+  "Multi-Line Diversified": {
+    manager: "Meridian Risk Mgmt",
+    strategy: "Maximum diversification across all categories",
+    riskLevel: "Moderate",
+    targetApy: "9-13%",
   },
 };
 
@@ -46,12 +90,14 @@ function getVaultDisplay(name: string) {
     if (name.includes(key)) return value;
   }
   return {
-    manager: 'Vault Manager',
-    strategy: 'Custom strategy',
-    riskLevel: 'Moderate',
-    targetApy: '8-14%',
+    manager: "Vault Manager",
+    strategy: "Custom strategy",
+    riskLevel: "Moderate",
+    targetApy: "8-14%",
   };
 }
+
+type Tab = "overview" | "risk";
 
 export default function VaultDetailPage({
   params,
@@ -61,9 +107,12 @@ export default function VaultDetailPage({
   const resolvedParams = use(params);
   const vaultAddress = resolvedParams.address as `0x${string}`;
   const { address: userAddress, isConnected } = useAccount();
+  const [tab, setTab] = useState<Tab>("overview");
 
-  const { data: vaultInfo, isLoading: vaultLoading } = useVaultInfo(vaultAddress);
-  const { policies, isLoading: policiesLoading } = useVaultPolicies(vaultAddress);
+  const { data: vaultInfo, isLoading: vaultLoading } =
+    useVaultInfo(vaultAddress);
+  const { policies, isLoading: policiesLoading } =
+    useVaultPolicies(vaultAddress);
   const { data: currentTime } = useCurrentTime();
   const { data: userShares } = useUserShares(vaultAddress, userAddress);
   const { data: maxWithdraw } = useMaxWithdraw(vaultAddress, userAddress);
@@ -77,7 +126,9 @@ export default function VaultDetailPage({
     return (
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="text-center">
-          <h1 className="text-lg font-semibold text-gray-900">Vault not found</h1>
+          <h1 className="text-lg font-semibold text-gray-900">
+            Vault not found
+          </h1>
           <p className="mt-2 text-sm text-gray-500">
             Could not load vault at address {shortenAddress(vaultAddress)}
           </p>
@@ -92,17 +143,42 @@ export default function VaultDetailPage({
     );
   }
 
-  const [name, manager, assets, shares, , bufferBps, feeBps, availableBuffer, deployedCapital, policyCount] =
-    vaultInfo as unknown as [string, `0x${string}`, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint];
+  const [
+    name,
+    manager,
+    assets,
+    shares,
+    ,
+    bufferBps,
+    feeBps,
+    availableBuffer,
+    deployedCapital,
+    policyCount,
+  ] = vaultInfo as unknown as [
+    string,
+    `0x${string}`,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+    bigint,
+  ];
 
   const display = getVaultDisplay(name);
   const sharePrice = getSharePriceNumber(assets, shares);
   const hasPosition = userShares !== undefined && userShares > 0n;
-  const userValue = hasPosition && userShares
-    ? Number(userShares) * sharePrice / 1e18
-    : 0;
+  const userValue =
+    hasPosition && userShares ? (Number(userShares) * sharePrice) / 1e18 : 0;
 
   const pendingClaims = pendingClaimsData ?? 0n;
+
+  const activeTabClass =
+    "rounded-md bg-white px-4 py-2 text-sm font-medium text-gray-900 shadow-sm";
+  const inactiveTabClass =
+    "rounded-md px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700";
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -118,171 +194,238 @@ export default function VaultDetailPage({
         <span className="text-sm font-medium text-gray-900">{name}</span>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Left column: vault details (2/3 width) */}
-        <div className="space-y-6 lg:col-span-2">
-          {/* Vault header */}
-          <div className="rounded-xl border border-gray-200 bg-white p-6">
-            <div className="flex items-start justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">{name}</h1>
-                <p className="mt-1 text-sm text-gray-500">
-                  Managed by{' '}
-                  <span className="font-medium text-gray-700">
-                    {display.manager}
-                  </span>
-                </p>
-                <p className="mt-1 text-sm italic text-gray-400">
-                  &quot;{display.strategy}&quot;
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-xs font-medium uppercase tracking-wider text-gray-400">
-                  Target APY
-                </p>
-                <p className="font-mono-num text-2xl font-bold text-gray-900">
-                  {display.targetApy}
-                </p>
-              </div>
-            </div>
+      {/* Tab bar */}
+      <div className="mb-6 flex gap-1 rounded-lg bg-gray-100 p-1">
+        <button
+          onClick={() => setTab("overview")}
+          className={tab === "overview" ? activeTabClass : inactiveTabClass}
+        >
+          Overview
+        </button>
+        <button
+          onClick={() => setTab("risk")}
+          className={tab === "risk" ? activeTabClass : inactiveTabClass}
+        >
+          Risk
+        </button>
+      </div>
 
-            {/* Stats row */}
-            <div className="mt-6 grid grid-cols-4 gap-4 border-t border-gray-100 pt-4">
-              <div>
-                <p className="text-xs text-gray-400">TVL</p>
-                <p className="font-mono-num text-sm font-semibold text-gray-900">
-                  {formatUSDC(assets)}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-400">Share Price</p>
-                <p className="font-mono-num text-sm font-semibold text-gray-900">
-                  ${sharePrice.toFixed(4)}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-400">Mgmt Fee</p>
-                <p className="text-sm font-semibold text-gray-900">
-                  {formatFeeBps(feeBps)}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-400">Buffer Ratio</p>
-                <p className="text-sm font-semibold text-gray-900">
-                  {formatBufferRatio(bufferBps)}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* NAV Ticker */}
-          <YieldTicker totalAssets={assets} totalSupply={shares} />
-
-          {/* User position */}
-          {isConnected && hasPosition && userShares && (
-            <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
-              <h3 className="mb-2 text-sm font-medium text-blue-800">
-                Your Position
-              </h3>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <p className="text-xs text-blue-600">Shares</p>
-                  <p className="font-mono-num text-sm font-semibold text-blue-900">
-                    {(Number(userShares) / 1e18).toLocaleString('en-US', {
-                      maximumFractionDigits: 6,
-                    })}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-blue-600">Value</p>
-                  <p className="font-mono-num text-sm font-semibold text-blue-900">
-                    ${userValue.toLocaleString('en-US', {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-blue-600">Max Withdraw</p>
-                  <p className="font-mono-num text-sm font-semibold text-blue-900">
-                    {maxWithdraw !== undefined ? formatUSDC(maxWithdraw) : '--'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Allocation bar */}
-          {policies.length > 0 && (
+      {tab === "overview" ? (
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* Left column: vault details (2/3 width) */}
+          <div className="space-y-6 lg:col-span-2">
+            {/* Vault header */}
             <div className="rounded-xl border border-gray-200 bg-white p-6">
-              <AllocationBar policies={policies} />
-            </div>
-          )}
+              <div className="flex items-start justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">{name}</h1>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Managed by{" "}
+                    <span className="font-medium text-gray-700">
+                      {display.manager}
+                    </span>
+                  </p>
+                  <p className="mt-1 text-sm italic text-gray-400">
+                    &quot;{display.strategy}&quot;
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs font-medium uppercase tracking-wider text-gray-400">
+                    Target APY
+                  </p>
+                  <p className="font-mono-num text-2xl font-bold text-gray-900">
+                    {display.targetApy}
+                  </p>
+                </div>
+              </div>
 
-          {/* Buffer visualization */}
-          <div className="rounded-xl border border-gray-200 bg-white p-6">
-            <BufferVisualization
-              totalAssets={assets}
-              deployedCapital={deployedCapital}
-              availableBuffer={availableBuffer}
-              pendingClaims={pendingClaims}
-              bufferBps={bufferBps}
-            />
-          </div>
-
-          {/* Policy table */}
-          <div className="rounded-xl border border-gray-200 bg-white p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-sm font-medium text-gray-700">
-                Policies ({Number(policyCount)})
-              </h3>
-              <div className="flex items-center gap-2">
-                {policies.map((p) => (
-                  <VerificationBadge
-                    key={Number(p.policyId)}
-                    type={p.global.verificationType}
-                  />
-                ))}
+              {/* Stats row */}
+              <div className="mt-6 grid grid-cols-4 gap-4 border-t border-gray-100 pt-4">
+                <div>
+                  <p className="text-xs text-gray-400">TVL</p>
+                  <p className="font-mono-num text-sm font-semibold text-gray-900">
+                    {formatUSDC(assets)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400">Share Price</p>
+                  <p className="font-mono-num text-sm font-semibold text-gray-900">
+                    ${sharePrice.toFixed(4)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400">Mgmt Fee</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {formatFeeBps(feeBps)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400">Buffer Ratio</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {formatBufferRatio(bufferBps)}
+                  </p>
+                </div>
               </div>
             </div>
 
-            {policiesLoading ? (
-              <div className="space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <div
-                    key={i}
-                    className="h-28 animate-pulse rounded-lg bg-gray-50"
-                  />
-                ))}
-              </div>
-            ) : policies.length === 0 ? (
-              <p className="py-6 text-center text-sm text-gray-400">
-                No policies in this vault.
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {policies.map((policy) => (
-                  <PolicyRow
-                    key={Number(policy.policyId)}
-                    policy={policy}
-                    currentTime={currentTime ?? 0n}
-                  />
-                ))}
+            {/* NAV Ticker */}
+            <YieldTicker totalAssets={assets} totalSupply={shares} />
+
+            {/* User position */}
+            {isConnected && hasPosition && userShares && (
+              <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
+                <h3 className="mb-2 text-sm font-medium text-blue-800">
+                  Your Position
+                </h3>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-xs text-blue-600">Shares</p>
+                    <p className="font-mono-num text-sm font-semibold text-blue-900">
+                      {(Number(userShares) / 1e18).toLocaleString("en-US", {
+                        maximumFractionDigits: 6,
+                      })}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-blue-600">Value</p>
+                    <p className="font-mono-num text-sm font-semibold text-blue-900">
+                      $
+                      {userValue.toLocaleString("en-US", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-blue-600">Max Withdraw</p>
+                    <p className="font-mono-num text-sm font-semibold text-blue-900">
+                      {maxWithdraw !== undefined
+                        ? formatUSDC(maxWithdraw)
+                        : "--"}
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
+
+            {/* Allocation bar */}
+            {policies.length > 0 && (
+              <div className="rounded-xl border border-gray-200 bg-white p-6">
+                <AllocationBar policies={policies} />
+              </div>
+            )}
+
+            {/* Buffer visualization */}
+            <div className="rounded-xl border border-gray-200 bg-white p-6">
+              <BufferVisualization
+                totalAssets={assets}
+                deployedCapital={deployedCapital}
+                availableBuffer={availableBuffer}
+                pendingClaims={pendingClaims}
+                bufferBps={bufferBps}
+              />
+            </div>
+
+            {/* Policy table */}
+            <div className="rounded-xl border border-gray-200 bg-white p-6">
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-sm font-medium text-gray-700">
+                  Policies ({Number(policyCount)})
+                </h3>
+              </div>
+
+              {policiesLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div
+                      key={i}
+                      className="h-28 animate-pulse rounded-lg bg-gray-50"
+                    />
+                  ))}
+                </div>
+              ) : policies.length === 0 ? (
+                <p className="py-6 text-center text-sm text-gray-400">
+                  No policies in this vault.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {policies.map((policy) => (
+                    <PolicyRow
+                      key={Number(policy.policyId)}
+                      policy={policy}
+                      currentTime={currentTime ?? 0n}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right column: deposit/withdraw sidebar (1/3 width) */}
+          <div className="lg:sticky lg:top-24 lg:self-start">
+            <DepositSidebar
+              vaultAddress={vaultAddress}
+              totalAssets={assets}
+              totalSupply={shares}
+              policyCount={Number(policyCount)}
+            />
           </div>
         </div>
-
-        {/* Right column: deposit/withdraw sidebar (1/3 width) */}
-        <div className="lg:sticky lg:top-24 lg:self-start">
-          <DepositSidebar
-            vaultAddress={vaultAddress}
-            totalAssets={assets}
-            totalSupply={shares}
-            policyCount={Number(policyCount)}
-          />
+      ) : (
+        /* Risk tab content */
+        <div className="space-y-6">
+          <div className="rounded-xl border border-gray-200 bg-white p-6">
+            <h2 className="text-lg font-semibold text-gray-900">
+              Risk Disclosures
+            </h2>
+            <div className="mt-4 space-y-4">
+              <div>
+                <h3 className="text-sm font-medium text-gray-700">
+                  Vault Manager
+                </h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  {display.manager} ({shortenAddress(manager)})
+                </p>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-700">
+                  Verification Taxonomy
+                </h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  This vault uses three types of claim verification: On-chain
+                  (trustless, permissionless via oracle price feeds),
+                  Oracle-dependent (automated via third-party data feeds), and
+                  Off-chain (insurer-assessed, manual verification). Each type
+                  carries different trust assumptions and settlement guarantees.
+                </p>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-700">
+                  Buffer Ratio
+                </h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  {formatBufferRatio(bufferBps)} of vault assets are held as
+                  liquid buffer for immediate withdrawals. The remaining capital
+                  is deployed as underwriting capacity. During high-claim
+                  events, withdrawal capacity may be temporarily reduced.
+                </p>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-700">
+                  Smart Contract Risk
+                </h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  This vault is deployed on a testnet for demonstration
+                  purposes. Smart contracts have not been audited. In
+                  production, all contracts will undergo multiple security
+                  audits and bug bounty programs. Never deposit funds you cannot
+                  afford to lose.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -291,6 +434,7 @@ function VaultDetailSkeleton() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-6 h-4 w-40 rounded bg-gray-200" />
+      <div className="mb-6 h-10 w-48 rounded-lg bg-gray-100" />
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
           <div className="h-48 animate-pulse rounded-xl border border-gray-200 bg-white" />
