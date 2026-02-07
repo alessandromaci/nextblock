@@ -442,7 +442,7 @@ contract InsuranceVault is ERC4626, Ownable, ReentrancyGuard {
         // sharePrice in USDC decimals (6 decimals precision)
         // If no shares, price is 1:1 (1e6 = $1.00)
         uint256 price = totalShares > 0
-            ? totalAssetsVal * 1e6 / (totalShares / 1e12) // Adjust for decimals offset
+            ? (totalAssetsVal * 1e18) / totalShares
             : 1e6;
 
         return (

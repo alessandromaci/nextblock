@@ -1,40 +1,43 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useVaultInfo, useUserShares } from '@/hooks/useVaultData';
-import { useVaultPolicyIds } from '@/hooks/useVaultPolicies';
-import { useGlobalPoliciesData } from '@/hooks/useVaultPolicies';
-import { useAccount } from 'wagmi';
-import { VerificationDot } from '@/components/shared/VerificationBadge';
+import Link from "next/link";
+import { useVaultInfo, useUserShares } from "@/hooks/useVaultData";
+import { useVaultPolicyIds } from "@/hooks/useVaultPolicies";
+import { useGlobalPoliciesData } from "@/hooks/useVaultPolicies";
+import { useAccount } from "wagmi";
+import { VerificationDot } from "@/components/shared/VerificationBadge";
 import {
-  formatUSDC,
   formatUSDCCompact,
   getSharePriceNumber,
   formatFeeBps,
   formatBufferRatio,
-} from '@/lib/formatting';
+  shortenAddress,
+} from "@/lib/formatting";
 
 // Static metadata for vaults (not stored on-chain)
-const VAULT_DISPLAY: Record<string, {
-  manager: string;
-  strategy: string;
-  riskLevel: string;
-  riskColor: string;
-  targetApy: string;
-}> = {
-  'Balanced Core': {
-    manager: 'NextBlock Core Team',
-    strategy: 'Diversified across all verification types',
-    riskLevel: 'Moderate',
-    riskColor: 'text-amber-600 bg-amber-50',
-    targetApy: '8-12%',
+const VAULT_DISPLAY: Record<
+  string,
+  {
+    manager: string;
+    strategy: string;
+    riskLevel: string;
+    riskColor: string;
+    targetApy: string;
+  }
+> = {
+  "Balanced Core": {
+    manager: "NextBlock Core Team",
+    strategy: "Diversified across all verification types",
+    riskLevel: "Moderate",
+    riskColor: "text-amber-600 bg-amber-50",
+    targetApy: "8-12%",
   },
-  'DeFi Alpha': {
-    manager: 'AlphaRe Capital',
-    strategy: 'Automated-only, no off-chain verification',
-    riskLevel: 'Higher',
-    riskColor: 'text-orange-600 bg-orange-50',
-    targetApy: '10-14%',
+  "DeFi Alpha": {
+    manager: "AlphaRe Capital",
+    strategy: "Automated-only, no off-chain verification",
+    riskLevel: "Higher",
+    riskColor: "text-orange-600 bg-orange-50",
+    targetApy: "10-14%",
   },
 };
 
@@ -44,11 +47,11 @@ function getVaultDisplay(name: string) {
     if (name.includes(key)) return value;
   }
   return {
-    manager: 'Vault Manager',
-    strategy: 'Custom strategy',
-    riskLevel: 'Moderate',
-    riskColor: 'text-amber-600 bg-amber-50',
-    targetApy: '8-14%',
+    manager: "Vault Manager",
+    strategy: "Custom strategy",
+    riskLevel: "Moderate",
+    riskColor: "text-amber-600 bg-amber-50",
+    targetApy: "8-14%",
   };
 }
 
@@ -58,17 +61,43 @@ interface VaultCardProps {
 
 export function VaultCard({ vaultAddress }: VaultCardProps) {
   const { address: userAddress } = useAccount();
-  const { data: vaultInfo, isLoading } = useVaultInfo(vaultAddress);
+  const { data: vaultInfo, isLoading, error } = useVaultInfo(vaultAddress);
   const { data: policyIds } = useVaultPolicyIds(vaultAddress);
   const { data: globalPolicies } = useGlobalPoliciesData(policyIds);
   const { data: userShares } = useUserShares(vaultAddress, userAddress);
 
-  if (isLoading || !vaultInfo) {
+  if (isLoading) {
     return <VaultCardSkeleton />;
   }
 
+  if (error || !vaultInfo) {
+    return (
+      <div className="rounded-xl border border-red-200 bg-red-50 p-6 shadow-sm">
+        <h3 className="text-sm font-semibold text-red-800">
+          Vault {shortenAddress(vaultAddress)}
+        </h3>
+        <p className="mt-1 text-xs text-red-600">
+          {error
+            ? (error as Error).message?.split("\n")[0] || "Contract call failed"
+            : "No data returned"}
+        </p>
+      </div>
+    );
+  }
+
   const [name, , assets, shares, , bufferBps, feeBps, , , policyCount] =
-    vaultInfo as unknown as [string, `0x${string}`, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint];
+    vaultInfo as unknown as [
+      string,
+      `0x${string}`,
+      bigint,
+      bigint,
+      bigint,
+      bigint,
+      bigint,
+      bigint,
+      bigint,
+      bigint,
+    ];
 
   const display = getVaultDisplay(name);
   const sharePrice = getSharePriceNumber(assets, shares);
@@ -78,7 +107,7 @@ export function VaultCard({ vaultAddress }: VaultCardProps) {
   const verificationTypes: Set<number> = new Set();
   if (globalPolicies) {
     for (const gp of globalPolicies) {
-      if (gp.status === 'success' && gp.result) {
+      if (gp.status === "success" && gp.result) {
         const policy = gp.result as unknown as { verificationType: number };
         verificationTypes.add(policy.verificationType);
       }
@@ -128,15 +157,22 @@ export function VaultCard({ vaultAddress }: VaultCardProps) {
         <div className="flex items-center justify-between border-t border-gray-100 pt-4">
           <div className="flex items-center gap-4">
             <div className="text-xs text-gray-500">
-              <span className="font-medium text-gray-700">{Number(policyCount)}</span>{' '}
-              {Number(policyCount) === 1 ? 'policy' : 'policies'}
+              <span className="font-medium text-gray-700">
+                {Number(policyCount)}
+              </span>{" "}
+              {Number(policyCount) === 1 ? "policy" : "policies"}
             </div>
             <div className="text-xs text-gray-500">
-              Fee: <span className="font-medium text-gray-700">{formatFeeBps(feeBps)}</span>
+              Fee:{" "}
+              <span className="font-medium text-gray-700">
+                {formatFeeBps(feeBps)}
+              </span>
             </div>
             <div className="text-xs text-gray-500">
-              Buffer:{' '}
-              <span className="font-medium text-gray-700">{formatBufferRatio(bufferBps)}</span>
+              Buffer:{" "}
+              <span className="font-medium text-gray-700">
+                {formatBufferRatio(bufferBps)}
+              </span>
             </div>
           </div>
 
@@ -162,9 +198,18 @@ export function VaultCard({ vaultAddress }: VaultCardProps) {
         {hasPosition && userShares && (
           <div className="mt-3 rounded-lg bg-blue-50 p-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-blue-700">Your position</span>
+              <span className="text-xs font-medium text-blue-700">
+                Your position
+              </span>
               <span className="font-mono-num text-sm font-semibold text-blue-900">
-                {formatUSDC(BigInt(Math.floor(Number(userShares) * sharePrice / 1e18)))}
+                $
+                {((Number(userShares) * sharePrice) / 1e18).toLocaleString(
+                  "en-US",
+                  {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  },
+                )}
               </span>
             </div>
           </div>

@@ -51,7 +51,7 @@ export function BufferVisualization({
           <div
             className="bg-emerald-400 transition-all duration-500"
             style={{ width: `${bufferPct}%` }}
-            title={`Buffer: ${formatUSDC(availableBuffer)}`}
+            title={`Available Liquidity: ${formatUSDC(availableBuffer)}`}
           />
         )}
       </div>
@@ -81,7 +81,7 @@ export function BufferVisualization({
         <div className="flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-sm bg-emerald-400" />
           <span className="text-xs text-gray-600">
-            Buffer{' '}
+            Available Liquidity{' '}
             <span className="font-mono-num font-medium">
               {formatUSDC(availableBuffer)}
             </span>

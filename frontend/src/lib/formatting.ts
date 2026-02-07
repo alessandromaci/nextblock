@@ -47,20 +47,10 @@ export function formatUSDCRaw(amount: bigint): string {
 export function formatSharePrice(totalAssets: bigint, totalSupply: bigint): string {
   if (totalSupply === 0n) return '$1.0000';
 
-  // sharePrice = totalAssets * 1e18 / totalSupply
-  // totalAssets is 6 decimals, totalSupply is 18 decimals
-  // With _decimalsOffset() = 12, shares are at 18 decimals
-  // sharePrice = totalAssets / totalSupply * 10^18
-  // To get price in USDC terms: totalAssets * 10^18 / totalSupply -> gives USDC raw (6 decimals)
-  // Actually: price per share in USDC = totalAssets / totalSupply * 10^(shareDecimals)
-  // Since totalAssets is in USDC (6 dec) and totalSupply is shares (18 dec):
-  // price = totalAssets * 10^18 / totalSupply => raw USDC per share (still 6 dec)
-  const priceScaled = (totalAssets * 10n ** 18n) / totalSupply;
-  // priceScaled is in USDC units (6 decimals) scaled by 10^18
-  // Actual USDC value = priceScaled / 10^18 => but we need 4 decimal places of display
-  // Price in USDC = totalAssets * 10^18 / totalSupply / 10^6 (to get human USDC)
-  // Let's use floating point for display
-  const priceNum = Number(priceScaled) / 1e18;
+  // totalAssets is USDC raw (6 decimals), totalSupply is shares (18 decimals)
+  // With _decimalsOffset=12: price in dollars = (assets / 1e6) / (shares / 1e18)
+  //   = assets * 1e12 / shares
+  const priceNum = Number(totalAssets * 10n ** 12n) / Number(totalSupply);
   return `$${priceNum.toFixed(4)}`;
 }
 
@@ -69,7 +59,9 @@ export function formatSharePrice(totalAssets: bigint, totalSupply: bigint): stri
  */
 export function getSharePriceNumber(totalAssets: bigint, totalSupply: bigint): number {
   if (totalSupply === 0n) return 1.0;
-  return Number(totalAssets * 10n ** 18n) / Number(totalSupply) ;
+  // totalAssets is USDC raw (6 dec), totalSupply is shares (18 dec)
+  // Price in dollars = (assets / 1e6) / (shares / 1e18) = assets * 1e12 / shares
+  return Number(totalAssets * 10n ** 12n) / Number(totalSupply);
 }
 
 /**

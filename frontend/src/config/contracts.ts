@@ -3712,15 +3712,15 @@ export const CHAIN_ADDRESSES: Record<number, ChainAddresses> = {
     // Vault A (Balanced Core): 0xD59dA9f6118d5a3867564c2C2F325f33Fce980b7
     // Vault B (DeFi Alpha):    0x4DDAf3BF65F95016570FB2e94Da468561F7163B5
   },
-  // Base Sepolia (V2 deploy - 2026-02-06)
+  // Base Sepolia (V3 deploy - 2026-02-07, div-by-zero fix + seed deposits)
   84532: {
-    vaultFactory: '0xFfC5B0c4977ac151EA7bd4d4E77c8C93cF51B118',
-    policyRegistry: '0x07B088adE0612E2CDE85f60ED8Cbeb552A4dcAED',
-    mockUSDC: '0xD011bF408A804679C6733926A20cA6Dae2d4837b',
-    mockOracle: '0x0e5f1dC0AAb5Dc3993200723cee24bD4D23a1308',
-    claimReceipt: '0xf9F87d030E7038382aC0fE4a9d9150744B15fD55',
-    // Vault A (Balanced Core): 0x6F8BDb44048dC1D5509Ce7b5C8dEB85A99039379
-    // Vault B (DeFi Alpha):    0xB1b10C0dfBc41d2d7d0321E3A9807409f4951a85
+    vaultFactory: '0x8Ff2331dd8a26d58344027577b7b3597eD5Ee114',
+    policyRegistry: '0xB852a0cf96AAF3266FF165cA34707F901F820FF3',
+    mockUSDC: '0xA92BAde45cCe2423ED6FaA5bBF2FfdEbb9948Ce9',
+    mockOracle: '0x726C141441C44493B9521C9F1E357C27dEB9ec4D',
+    claimReceipt: '0x54bB536cC8776314D9449ef7c573Be5f1620a821',
+    // Vault A (Balanced Core): 0xE96B1c95B27e387B4ff5002f8ed5A1364F13F2B6
+    // Vault B (DeFi Alpha):    0xf706f178f5e9B0a6ec1AD47911C9F63f66326BA1
   },
 };
 

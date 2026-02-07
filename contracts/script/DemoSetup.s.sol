@@ -243,6 +243,19 @@ contract DemoSetup is Script {
         usdc.mint(deployer, 50_000e6);
         console.log("Admin funded: $50,000 USDC");
 
+        // Seed deposits: deployer deposits $10K into each vault
+        // This ensures totalSupply > 0 at deploy, so share price starts at $1.0000
+        // When time is advanced later, premiums earn and share price grows naturally
+        uint256 seedDeposit = 10_000e6;
+        usdc.mint(deployer, seedDeposit * 2);
+        usdc.approve(vaultAAddr, seedDeposit);
+        vaultA.deposit(seedDeposit, deployer);
+        console.log("Vault A seed deposit: $10,000");
+
+        usdc.approve(vaultBAddr, seedDeposit);
+        vaultB.deposit(seedDeposit, deployer);
+        console.log("Vault B seed deposit: $10,000");
+
         vm.stopBroadcast();
 
         // ============================================

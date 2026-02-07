@@ -1,9 +1,13 @@
-'use client';
+"use client";
 
-import { useReadContract, useReadContracts } from 'wagmi';
-import { VAULT_FACTORY_ABI, INSURANCE_VAULT_ABI, MOCK_USDC_ABI } from '@/config/contracts';
-import { POLL_INTERVAL } from '@/config/constants';
-import { useAddresses } from './useAddresses';
+import { useReadContract, useReadContracts } from "wagmi";
+import {
+  VAULT_FACTORY_ABI,
+  INSURANCE_VAULT_ABI,
+  MOCK_USDC_ABI,
+} from "@/config/contracts";
+import { POLL_INTERVAL } from "@/config/constants";
+import { useAddresses } from "./useAddresses";
 
 /**
  * Vault info returned from getVaultInfo().
@@ -29,10 +33,11 @@ export function useVaultAddresses() {
   return useReadContract({
     address: addresses.vaultFactory,
     abi: VAULT_FACTORY_ABI,
-    functionName: 'getVaults',
+    functionName: "getVaults",
     query: {
       refetchInterval: POLL_INTERVAL,
-      enabled: addresses.vaultFactory !== '0x0000000000000000000000000000000000000000',
+      enabled:
+        addresses.vaultFactory !== "0x0000000000000000000000000000000000000000",
     },
   });
 }
@@ -44,7 +49,7 @@ export function useVaultInfo(vaultAddress: `0x${string}` | undefined) {
   return useReadContract({
     address: vaultAddress,
     abi: INSURANCE_VAULT_ABI,
-    functionName: 'getVaultInfo',
+    functionName: "getVaultInfo",
     query: {
       refetchInterval: POLL_INTERVAL,
       enabled: !!vaultAddress,
@@ -55,11 +60,13 @@ export function useVaultInfo(vaultAddress: `0x${string}` | undefined) {
 /**
  * Fetch vault info for multiple vaults in a single multicall.
  */
-export function useMultiVaultInfo(vaultAddresses: readonly `0x${string}`[] | undefined) {
+export function useMultiVaultInfo(
+  vaultAddresses: readonly `0x${string}`[] | undefined,
+) {
   const contracts = (vaultAddresses ?? []).map((address) => ({
     address,
     abi: INSURANCE_VAULT_ABI,
-    functionName: 'getVaultInfo' as const,
+    functionName: "getVaultInfo" as const,
   }));
 
   return useReadContracts({
@@ -81,7 +88,7 @@ export function useUserShares(
   return useReadContract({
     address: vaultAddress,
     abi: INSURANCE_VAULT_ABI,
-    functionName: 'balanceOf',
+    functionName: "balanceOf",
     args: userAddress ? [userAddress] : undefined,
     query: {
       refetchInterval: POLL_INTERVAL,
@@ -100,7 +107,7 @@ export function useMaxWithdraw(
   return useReadContract({
     address: vaultAddress,
     abi: INSURANCE_VAULT_ABI,
-    functionName: 'maxWithdraw',
+    functionName: "maxWithdraw",
     args: userAddress ? [userAddress] : undefined,
     query: {
       refetchInterval: POLL_INTERVAL,
@@ -117,11 +124,13 @@ export function useUSDCBalance(userAddress: `0x${string}` | undefined) {
   return useReadContract({
     address: addresses.mockUSDC,
     abi: MOCK_USDC_ABI,
-    functionName: 'balanceOf',
+    functionName: "balanceOf",
     args: userAddress ? [userAddress] : undefined,
     query: {
       refetchInterval: POLL_INTERVAL,
-      enabled: !!userAddress && addresses.mockUSDC !== '0x0000000000000000000000000000000000000000',
+      enabled:
+        !!userAddress &&
+        addresses.mockUSDC !== "0x0000000000000000000000000000000000000000",
     },
   });
 }
@@ -137,14 +146,15 @@ export function useUSDCAllowance(
   return useReadContract({
     address: addresses.mockUSDC,
     abi: MOCK_USDC_ABI,
-    functionName: 'allowance',
-    args: userAddress && spenderAddress ? [userAddress, spenderAddress] : undefined,
+    functionName: "allowance",
+    args:
+      userAddress && spenderAddress ? [userAddress, spenderAddress] : undefined,
     query: {
       refetchInterval: POLL_INTERVAL,
       enabled:
         !!userAddress &&
         !!spenderAddress &&
-        addresses.mockUSDC !== '0x0000000000000000000000000000000000000000',
+        addresses.mockUSDC !== "0x0000000000000000000000000000000000000000",
     },
   });
 }
@@ -156,7 +166,7 @@ export function usePendingClaims(vaultAddress: `0x${string}` | undefined) {
   return useReadContract({
     address: vaultAddress,
     abi: INSURANCE_VAULT_ABI,
-    functionName: 'totalPendingClaims',
+    functionName: "totalPendingClaims",
     query: {
       refetchInterval: POLL_INTERVAL,
       enabled: !!vaultAddress,
@@ -174,7 +184,7 @@ export function usePreviewDeposit(
   return useReadContract({
     address: vaultAddress,
     abi: INSURANCE_VAULT_ABI,
-    functionName: 'previewDeposit',
+    functionName: "previewDeposit",
     args: [assets],
     query: {
       enabled: !!vaultAddress && assets > 0n,
@@ -193,13 +203,13 @@ export function useUserPositions(
     {
       address,
       abi: INSURANCE_VAULT_ABI,
-      functionName: 'balanceOf' as const,
-      args: userAddress ? [userAddress] as const : undefined,
+      functionName: "balanceOf" as const,
+      args: userAddress ? ([userAddress] as const) : undefined,
     },
     {
       address,
       abi: INSURANCE_VAULT_ABI,
-      functionName: 'convertToAssets' as const,
+      functionName: "convertToAssets" as const,
       args: [1n] as const, // Will multiply by balance client-side
     },
   ]);

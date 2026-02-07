@@ -23,19 +23,19 @@ export function ClaimTriggers({ vaultAddresses, vaultNames }: ClaimTriggersProps
 
   const handleP1Trigger = () => {
     if (selectedVault) {
-      checkClaim.trigger(selectedVault, 1n);
+      checkClaim.trigger(selectedVault, 0n);
     }
   };
 
   const handleP1TriggerAll = () => {
     for (const vault of vaultAddresses) {
-      checkClaim.trigger(vault, 1n);
+      checkClaim.trigger(vault, 0n);
     }
   };
 
   const handleP2Trigger = () => {
     if (selectedVault) {
-      reportEvent.trigger(selectedVault, 2n);
+      reportEvent.trigger(selectedVault, 1n);
     }
   };
 
@@ -43,7 +43,7 @@ export function ClaimTriggers({ vaultAddresses, vaultNames }: ClaimTriggersProps
     if (selectedVault) {
       const amount = parseUSDC(p3Amount);
       if (amount > 0n) {
-        submitClaim.trigger(selectedVault, 3n, amount);
+        submitClaim.trigger(selectedVault, 2n, amount);
         setP3Amount('');
       }
     }

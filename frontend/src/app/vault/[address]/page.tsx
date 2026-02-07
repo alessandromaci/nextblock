@@ -189,7 +189,7 @@ export default function VaultDetailPage({
                   <p className="text-xs text-blue-600">Shares</p>
                   <p className="font-mono-num text-sm font-semibold text-blue-900">
                     {(Number(userShares) / 1e18).toLocaleString('en-US', {
-                      maximumFractionDigits: 2,
+                      maximumFractionDigits: 6,
                     })}
                   </p>
                 </div>
