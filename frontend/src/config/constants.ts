@@ -43,6 +43,7 @@ export const BASIS_POINTS = 10_000;
  */
 export const CHAIN_ADMIN_ADDRESS: Record<number, `0x${string}`> = {
   84532: '0x35cE744bc6b5CE979fA3251b8008b64C35aa8505', // Base Sepolia admin
+  11155111: '0x35cE744bc6b5CE979fA3251b8008b64C35aa8505', // Ethereum Sepolia admin
   5042002: '0x35cE744bc6b5CE979fA3251b8008b64C35aa8505', // Arc Testnet admin
 };
 

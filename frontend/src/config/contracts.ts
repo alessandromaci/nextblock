@@ -3718,6 +3718,14 @@ export const CHAIN_ADDRESSES: Record<number, ChainAddresses> = {
     mockOracle: '0x289283f042E244567465cE26Da005b7663E86BFe',
     claimReceipt: '0xefe6ddeC75d814A77775b46B62711ec94a8c2ce1',
   },
+  // Ethereum Sepolia (deploy - 2026-02-08)
+  11155111: {
+    vaultFactory: '0x0859faD8fA327417755D0E4E8a0c7d09FA5E9C52',
+    policyRegistry: '0x5503d1f62fD9e80996f92FE28f1367d15CD7BCb8',
+    mockUSDC: '0x3e658AAd7Ecb17b09cCda222C185A85eF946C28b',
+    mockOracle: '0xa335e377684d8787D1928bC2e726D70911Cb4050',
+    claimReceipt: '0x57848726D507CD6DcC94f7d92C2Ee30d6eB77Ef1',
+  },
   // Arc Testnet (deploy - 2026-02-07)
   5042002: {
     vaultFactory: '0x0B1dB106a79425e1AeFe4b144fC750793C4f8b49',

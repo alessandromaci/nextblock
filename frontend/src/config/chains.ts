@@ -1,7 +1,8 @@
-import { baseSepolia as baseSepoliaChain } from "viem/chains";
+import { baseSepolia as baseSepoliaChain, sepolia as sepoliaChain } from "viem/chains";
 import { defineChain } from "viem";
 
 export const baseSepolia = baseSepoliaChain;
+export const sepolia = sepoliaChain;
 
 export const arcTestnet = defineChain({
   id: 5042002,
@@ -18,7 +19,7 @@ export const arcTestnet = defineChain({
 /**
  * Supported chains for the app.
  */
-export const supportedChains = [baseSepoliaChain, arcTestnet] as const;
+export const supportedChains = [baseSepoliaChain, sepoliaChain, arcTestnet] as const;
 
 /**
  * Default chain used when no wallet is connected.
