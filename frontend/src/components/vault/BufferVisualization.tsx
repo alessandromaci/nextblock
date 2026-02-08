@@ -5,7 +5,6 @@ import { formatUSDC, formatBufferRatio } from '@/lib/formatting';
 interface BufferVisualizationProps {
   totalAssets: bigint;
   deployedCapital: bigint;
-  availableBuffer: bigint;
   pendingClaims: bigint;
   bufferBps: bigint;
 }

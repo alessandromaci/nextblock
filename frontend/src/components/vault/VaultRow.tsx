@@ -6,6 +6,7 @@ import {
   useVaultPolicyIds,
   useGlobalPoliciesData,
 } from "@/hooks/useVaultPolicies";
+import { useEnsName } from "@/hooks/useEns";
 import { VerificationDot } from "@/components/shared/VerificationBadge";
 import {
   formatUSDCCompact,
@@ -122,7 +123,7 @@ export function VaultRow({ vaultAddress }: VaultRowProps) {
     );
   }
 
-  const [name, , assets, , , , , , , policyCount] = vaultInfo as unknown as [
+  const [name, manager, assets, , , , , , , policyCount] = vaultInfo as unknown as [
     string,
     `0x${string}`,
     bigint,
@@ -136,6 +137,8 @@ export function VaultRow({ vaultAddress }: VaultRowProps) {
   ];
 
   const display = getVaultDisplay(name);
+  const { ensName } = useEnsName(manager);
+  const managerDisplay = ensName || display.manager;
 
   // Get unique verification types
   const verificationTypes: Set<number> = new Set();
@@ -155,7 +158,7 @@ export function VaultRow({ vaultAddress }: VaultRowProps) {
           <div className="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
             {name}
           </div>
-          <div className="mt-0.5 text-xs text-gray-400">{display.manager}</div>
+          <div className="mt-0.5 text-xs text-gray-400">{managerDisplay}</div>
         </Link>
       </td>
       <td className="px-6 py-4">
@@ -167,7 +170,7 @@ export function VaultRow({ vaultAddress }: VaultRowProps) {
       </td>
       <td className="px-6 py-4">
         <Link href={`/vault/${vaultAddress}`} className="block">
-          <span className="text-sm text-gray-600">{display.manager}</span>
+          <span className="text-sm text-gray-600">{ensName || shortenAddress(manager)}</span>
         </Link>
       </td>
       <td className="px-6 py-4">

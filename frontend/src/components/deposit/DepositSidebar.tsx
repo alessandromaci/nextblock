@@ -31,7 +31,10 @@ export function DepositSidebar({
   const [inputValue, setInputValue] = useState('');
 
   const { data: usdcBalance } = useUSDCBalance(address);
-  const { data: maxWithdraw } = useMaxWithdraw(vaultAddress, address);
+  const { data: maxWithdraw } = useMaxWithdraw(
+    maxWithdrawOverride !== undefined ? undefined : vaultAddress,
+    address
+  );
 
   const parsedAmount = parseUSDC(inputValue);
 

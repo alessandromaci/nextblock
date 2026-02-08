@@ -13,6 +13,9 @@ remappings = [
     "forge-std/=lib/forge-std/src/",
 ]
 
+[rpc_endpoints]
+arc_testnet = "https://rpc.testnet.arc.network"
+
 [profile.default.fuzz]
 runs = 256
 

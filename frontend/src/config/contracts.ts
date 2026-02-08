@@ -3718,6 +3718,14 @@ export const CHAIN_ADDRESSES: Record<number, ChainAddresses> = {
     mockOracle: '0x289283f042E244567465cE26Da005b7663E86BFe',
     claimReceipt: '0xefe6ddeC75d814A77775b46B62711ec94a8c2ce1',
   },
+  // Arc Testnet (deploy - 2026-02-07)
+  5042002: {
+    vaultFactory: '0x0B1dB106a79425e1AeFe4b144fC750793C4f8b49',
+    policyRegistry: '0x2276a1076931De26FA4F1470ebC6b2820Fb087d3',
+    mockUSDC: '0x12e49ee0f425C740f3dDdfdCD6496A73bCbC85e5',
+    mockOracle: '0x9b7A5665Bea2DB15DF9Db0d32e8F07F9c949E5FC',
+    claimReceipt: '0xb64734509467ab444674d8825e38711c5cBfe836',
+  },
 };
 
 // Default export for backward compat

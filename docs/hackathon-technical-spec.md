@@ -19,6 +19,7 @@
 9. [Security Concerns](#9-security-concerns)
 10. [Recommended Agent Skills](#10-recommended-agent-skills)
 11. [Implementation Risks](#11-implementation-risks)
+12. [Day 4 Changes -- Buffer Visualization & Withdraw Cap](#12-day-4-changes----buffer-visualization--withdraw-cap-feb-7-2026)
 
 ---
 
@@ -1312,7 +1313,7 @@ VaultDetailPage
   |     +-- PolicyRow (P2) ...
   |     +-- PolicyRow (P3) ...
   +-- AllocationBar (visual: P1 40% | P2 20% | P3 40%)
-  +-- BufferVisualization (80% deployed | 20% buffer)
+  +-- BufferVisualization (TVL-based: Policy Exposure | Pending Claims | Free Capital)
   +-- YieldSection
   |     +-- YieldTicker (real-time NAV per share)
   |     +-- ProjectedAPY
@@ -1333,7 +1334,7 @@ VaultDetailPage
   |           +-- "Your $X is backing N policies"
 ```
 
-**Contract reads**: `totalAssets()`, `totalSupply()`, `policies(i)`, per policy: `registry.getPolicy(id)`, `balanceOf(user)`, `maxWithdraw(user)`, `registry.currentTime()`.
+**Contract reads**: `getVaultInfo()` (aggregated), `getPolicyIds()`, per policy: `getVaultPolicy(id)` + `registry.getPolicy(id)`, `balanceOf(user)`, `maxWithdraw(user)`, `totalPendingClaims`, `registry.currentTime()`.
 
 #### Inline Sidebar: Deposit/Withdraw (Morpho-style)
 
@@ -1713,6 +1714,138 @@ uint256 constant NINETY_DAYS = 90 days;
 1. **InsuranceVault.totalAssets()** -- The formula must correctly handle every combination of premiums, claims, fees, and time. One bug here breaks everything.
 2. **Three claim trigger paths** -- Each path has different access control, different amount logic (binary vs partial), different post-claim state. High test surface area.
 3. **Frontend deposit state machine** -- Two-transaction flow (approve + deposit) with proper loading states, error handling, and wallet confirmation UX. Must feel smooth during a live demo.
+
+---
+
+## 12. Day 4 Changes -- Buffer Visualization & Withdraw Cap (Feb 7, 2026)
+
+### 12.1 Problem: Contract Buffer vs TVL-Based Buffer
+
+The contract's `_availableBuffer()` computes:
+
+```
+buffer = USDC.balanceOf(vault) - totalDeployedCapital - totalPendingClaims
+```
+
+This uses the **gross USDC balance**, which includes unearned premiums and accrued fees. The buffer was showing more withdrawable capital than the vault's NAV warranted.
+
+The correct investor-facing buffer should be based on **TVL (totalAssets)**, not gross USDC balance:
+
+```
+freeCapital = totalAssets - deployedCapital - pendingClaims
+```
+
+This excludes unearned premiums and accrued fees from the withdrawable amount.
+
+### 12.2 BufferVisualization Redesign
+
+**File**: `frontend/src/components/vault/BufferVisualization.tsx`
+
+**Before**: Bar was based on gross USDC balance with segments "Deployed" (blue) and "Available Liquidity" (green), labeled "Capital Deployment".
+
+**After**: Bar is based on `totalAssets` (TVL) with three segments:
+
+| Segment | Color | Calculation | Meaning |
+|---------|-------|-------------|---------|
+| Policy Exposure | Blue (`bg-blue-400`) | `min(deployedCapital, totalAssets)` | Capital committed to backing policies |
+| Pending Claims | Red (`bg-red-400`) | `min(pendingClaims, totalAssets - exposure)` | Claims awaiting exercise |
+| Free Capital | Green (`bg-emerald-400`) | `max(totalAssets - exposure - pending, 0)` | Capital available for withdrawal |
+
+**Label changes**: "Deployed" -> "Policy Exposure", "Available Liquidity" -> "Free Capital", "Capital Deployment" -> "Capital Allocation".
+
+**Edge cases handled**:
+- `deployedCapital > totalAssets`: Exposure capped at TVL (no bar overflow)
+- `pendingClaims` overflow: Capped at remaining space after exposure
+- `totalAssets = 0`: All percentages are 0, no division by zero
+- All segments sum to exactly `totalAssets` by construction
+
+**Note**: The `availableBuffer` prop is still accepted in the interface but is no longer used. The component derives all segments from `totalAssets`, `deployedCapital`, and `pendingClaims`.
+
+### 12.3 Withdraw Cap (effectiveMaxWithdraw)
+
+**File**: `frontend/src/app/vault/[address]/page.tsx`
+
+The vault detail page now computes a tighter withdrawal cap:
+
+```typescript
+// TVL-based free capital (conservative, excludes unearned premiums)
+const freeCapital = assets > deployedCapital + pendingClaims
+  ? assets - deployedCapital - pendingClaims
+  : 0n;
+
+// Cap at the more restrictive of: TVL-based free capital vs contract's maxWithdraw
+const effectiveMaxWithdraw = maxWithdraw !== undefined
+  ? (freeCapital < maxWithdraw ? freeCapital : maxWithdraw)
+  : undefined;
+```
+
+**How it works**:
+1. `freeCapital` = `totalAssets - deployedCapital - pendingClaims` (TVL-based, conservative)
+2. `effectiveMaxWithdraw` = `min(freeCapital, contract.maxWithdraw(user))` (tighter of the two caps)
+3. The contract's `maxWithdraw` already caps at `min(userAssets, _availableBuffer())`, so the frontend adds an additional TVL-based constraint
+
+**Data flow**:
+```
+Vault Detail Page
+  -> computes effectiveMaxWithdraw = min(freeCapital, contractMaxWithdraw)
+  -> passes maxWithdrawOverride={effectiveMaxWithdraw} to DepositSidebar
+  -> DepositSidebar uses: maxWithdrawOverride ?? maxWithdraw ?? 0n
+  -> WithdrawTab uses the final value for:
+     - AmountInput max amount (Max button)
+     - Button disabled check (amount > max)
+     - Button text ("Exceeds available buffer")
+     - Zero-balance warning display
+```
+
+**DepositSidebar changes** (`frontend/src/components/deposit/DepositSidebar.tsx`):
+- Added optional `maxWithdrawOverride?: bigint` prop
+- When provided, overrides the contract's raw `maxWithdraw` for the withdraw cap
+- Nullish coalescing chain: `maxWithdrawOverride ?? maxWithdraw ?? 0n`
+
+**Your Position card**: Shows the capped `effectiveMaxWithdraw` instead of the raw contract `maxWithdraw`.
+
+### 12.4 Contract vs Frontend Enforcement
+
+**IMPORTANT**: The withdraw cap is **frontend-only**. The contract's `maxWithdraw()` and `_withdraw()` still use `_availableBuffer()` (gross USDC balance based). A user calling the contract directly (via Etherscan, cast, or another frontend) can withdraw up to the full `_availableBuffer()` amount.
+
+For the hackathon demo, this is acceptable because:
+1. The demo environment is controlled
+2. The frontend is the only UI
+3. The `min()` operation means the UI never shows more than the contract allows
+
+**Production consideration**: To enforce the TVL-based cap on-chain, `_availableBuffer()` should be changed to:
+
+```solidity
+function _availableBuffer() internal view returns (uint256) {
+    uint256 ta = totalAssets();
+    uint256 reserved = totalDeployedCapital + totalPendingClaims;
+    if (ta <= reserved) return 0;
+    return ta - reserved;
+}
+```
+
+This would use NAV instead of gross balance. However, this changes the contract's withdrawal semantics and ERC-4626 behavior, so it should be evaluated as a separate design decision with full testing.
+
+### 12.5 Numeric Example
+
+Vault A (Balanced Core) at day 0, after seed deposits and premium funding:
+
+```
+USDC.balanceOf(vault)    = $26,500 ($20,400 seed + $6,100 premiums)
+totalDeployedCapital     = $16,320 (80% of $20,400 seed deposit)
+totalPendingClaims       = $0
+unearnedPremiums         = $6,100 (all premiums unearned at day 0)
+accruedFees              = $0
+totalAssets (NAV)        = $26,500 - $6,100 - $0 - $0 = $20,400
+
+Contract _availableBuffer() = $26,500 - $16,320 - $0 = $10,180
+Frontend freeCapital        = $20,400 - $16,320 - $0 = $4,080
+
+effectiveMaxWithdraw = min($4,080, contract.maxWithdraw)
+                     = min($4,080, min(userAssets, $10,180))
+```
+
+The frontend shows ~$4,080 available for withdrawal instead of ~$10,180. This prevents investors from withdrawing unearned premiums that belong to the insurance pool.
 
 ---
 

@@ -17,6 +17,7 @@ import { BufferVisualization } from "@/components/vault/BufferVisualization";
 import { YieldTicker } from "@/components/vault/YieldTicker";
 import { DepositSidebar } from "@/components/deposit/DepositSidebar";
 import { VerificationBadge } from "@/components/shared/VerificationBadge";
+import { useEnsName } from "@/hooks/useEns";
 import {
   formatUSDC,
   formatFeeBps,
@@ -100,6 +101,7 @@ function getVaultDisplay(name: string) {
 const EXPLORER_URLS: Record<number, string> = {
   84532: "https://sepolia.basescan.org",
   8453: "https://basescan.org",
+  5042002: "https://testnet.arcscan.app",
 };
 
 function getExplorerUrl(chainId: number, address: string): string | null {
@@ -129,6 +131,12 @@ export default function VaultDetailPage({
   const { data: userShares } = useUserShares(vaultAddress, userAddress);
   const { data: maxWithdraw } = useMaxWithdraw(vaultAddress, userAddress);
   const { data: pendingClaimsData } = usePendingClaims(vaultAddress);
+
+  // Extract manager address for ENS resolution (must call hook before early returns)
+  const managerAddr = vaultInfo
+    ? ((vaultInfo as unknown as [string, `0x${string}`])[1])
+    : undefined;
+  const { ensName: managerEns } = useEnsName(managerAddr);
 
   if (vaultLoading) {
     return <VaultDetailSkeleton />;
@@ -268,8 +276,13 @@ export default function VaultDetailPage({
                   <p className="mt-1 text-sm text-gray-500">
                     Managed by{" "}
                     <span className="font-medium text-gray-700">
-                      {display.manager}
+                      {managerEns || display.manager}
                     </span>
+                    {managerEns && (
+                      <span className="ml-1 text-xs text-gray-400">
+                        ({shortenAddress(manager)})
+                      </span>
+                    )}
                   </p>
                   <p className="mt-1 text-sm italic text-gray-400">
                     &quot;{display.strategy}&quot;
@@ -366,7 +379,6 @@ export default function VaultDetailPage({
               <BufferVisualization
                 totalAssets={assets}
                 deployedCapital={deployedCapital}
-                availableBuffer={availableBuffer}
                 pendingClaims={pendingClaims}
                 bufferBps={bufferBps}
               />
@@ -431,7 +443,7 @@ export default function VaultDetailPage({
                   Vault Manager
                 </h3>
                 <p className="mt-1 text-sm text-gray-500">
-                  {display.manager} ({shortenAddress(manager)})
+                  {managerEns || display.manager} ({shortenAddress(manager)})
                 </p>
               </div>
               <div>
