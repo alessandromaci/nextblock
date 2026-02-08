@@ -105,6 +105,12 @@ export function VaultRow({ vaultAddress }: VaultRowProps) {
   const { data: policyIds } = useVaultPolicyIds(vaultAddress);
   const { data: globalPolicies } = useGlobalPoliciesData(policyIds);
 
+  // Extract manager address for ENS resolution (must call hook before early returns)
+  const managerAddr = vaultInfo
+    ? ((vaultInfo as unknown as [string, `0x${string}`])[1])
+    : undefined;
+  const { ensName } = useEnsName(managerAddr);
+
   if (isLoading) {
     return <VaultRowSkeleton />;
   }
@@ -123,7 +129,7 @@ export function VaultRow({ vaultAddress }: VaultRowProps) {
     );
   }
 
-  const [name, manager, assets, , , , , , , policyCount] = vaultInfo as unknown as [
+  const [name, , assets, , , , , , , policyCount] = vaultInfo as unknown as [
     string,
     `0x${string}`,
     bigint,
@@ -137,7 +143,6 @@ export function VaultRow({ vaultAddress }: VaultRowProps) {
   ];
 
   const display = getVaultDisplay(name);
-  const { ensName } = useEnsName(manager);
   const managerDisplay = ensName || display.manager;
 
   // Get unique verification types
@@ -170,7 +175,7 @@ export function VaultRow({ vaultAddress }: VaultRowProps) {
       </td>
       <td className="px-6 py-4">
         <Link href={`/vault/${vaultAddress}`} className="block">
-          <span className="text-sm text-gray-600">{ensName || shortenAddress(manager)}</span>
+          <span className="text-sm text-gray-600">{ensName || shortenAddress(managerAddr!)}</span>
         </Link>
       </td>
       <td className="px-6 py-4">
